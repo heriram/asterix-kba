@@ -1,0 +1,18 @@
+<externalLibrary xmlns="library">
+	<language>JAVA</language>
+	<libraryFunctions>
+		<libraryFunction>
+			<function_type>SCALAR</function_type>
+			<name>FilteredStreamDoc</name>
+			<arguments>StreamDoc</arguments>
+			<return_type>FilteredStream</return_type>
+			<definition>edu.uci.ics.asterix.external.KBAStreamFilteringFunctionFactory</definition>
+		</libraryFunction>
+	</libraryFunctions>
+	<libraryAdapters>
+		<libraryAdapter>
+			<name>kba_stream_feeder</name>
+			<factory_class>edu.uci.ics.asterix.external.library.adaptor.KBAStreamGeneratorAdapterFactory</factory_class>
+		</libraryAdapter>
+	</libraryAdapters>
+</externalLibrary>
