@@ -2,7 +2,6 @@ package edu.uci.ics.asterix.external.library.utils;
 
 import org.trec.kba.streamcorpus.StreamItem;
 
-import edu.uci.ics.asterix.external.dataset.adapter.KBAStreamDocument;
 import edu.uci.ics.asterix.om.base.AMutableRecord;
 import edu.uci.ics.asterix.om.base.AMutableString;
 import edu.uci.ics.asterix.om.base.IAObject;
@@ -13,9 +12,6 @@ public class KBAStreamItemProcessor extends KBAStreamDocument {
 
     private IAObject[] mutableKBAStreamDocumentFields;
     private AMutableRecord mutableRecord;
-   
-        
-
     
     public KBAStreamItemProcessor(ARecordType recordType ) {
         super();
