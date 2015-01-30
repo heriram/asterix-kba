@@ -94,6 +94,22 @@ public class KBAStreamSocketClientAdapter implements IFeedAdapter {
         }
 
     }
+    
+    private Socket waitForReceiver() throws Exception {
+        Socket socket = null;
+        while (socket == null) {
+            try {
+                socket = new Socket(LOCALHOST, port);
+            } catch (Exception e) {
+                if (LOGGER.isLoggable(Level.WARNING)) {
+                    LOGGER.warning("Receiver not ready, would wait for " + (RECONNECT_PERIOD / 1000)
+                            + " seconds before reconnecting");
+                }
+                Thread.sleep(RECONNECT_PERIOD);
+            }
+        }
+        return socket;
+    }
 
     private static class KBAStreamServer {
         private final KBADataProvider dataProvider;
@@ -191,21 +207,7 @@ public class KBAStreamSocketClientAdapter implements IFeedAdapter {
 
     }
 
-    private Socket waitForReceiver() throws Exception {
-        Socket socket = null;
-        while (socket == null) {
-            try {
-                socket = new Socket(LOCALHOST, port);
-            } catch (Exception e) {
-                if (LOGGER.isLoggable(Level.WARNING)) {
-                    LOGGER.warning("Receiver not ready, would wait for " + (RECONNECT_PERIOD / 1000)
-                            + " seconds before reconnecting");
-                }
-                Thread.sleep(RECONNECT_PERIOD);
-            }
-        }
-        return socket;
-    }
+
 
     @Override
     public DataExchangeMode getDataExchangeMode() {

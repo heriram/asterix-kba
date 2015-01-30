@@ -40,9 +40,7 @@ import edu.uci.ics.asterix.runtime.operators.file.CounterTimerTupleForwardPolicy
 import edu.uci.ics.hyracks.api.context.IHyracksTaskContext;
 
 /**
- * An implementation of @see {PullBasedFeedClient} for the Twitter service. The
- * feed client fetches data from Twitter service by sending request at regular
- * (configurable) interval.
+ * An implementation of @see {PushBasedFeedClient} for the KBA Stream service.
  */
 public class PushBasedKBAStreamFeedClient extends FeedClient {
 

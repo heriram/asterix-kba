@@ -35,12 +35,12 @@ public class KBAStreamSocketClientAdapterFactory implements IFeedAdapterFactory 
 
     private String[] directorySplits;
 
-    public static final String KEY_FILE_SPLITS = "file_splits";
+    public static final String KEY_DIRECTORY_SPLITS = "directory_splits";
 
     @Override
     public void configure(Map<String, String> configuration, ARecordType outputType) throws Exception {
         this.outputType = outputType;
-        String directorySplitsValue = configuration.get(KEY_FILE_SPLITS);
+        String directorySplitsValue = configuration.get(KEY_DIRECTORY_SPLITS);
         if (directorySplitsValue == null) {
             throw new IllegalArgumentException(
                     "File splits not specified. File split is specified as a comma separated list of paths");

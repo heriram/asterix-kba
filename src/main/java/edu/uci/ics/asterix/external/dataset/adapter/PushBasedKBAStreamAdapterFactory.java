@@ -16,7 +16,7 @@ public class PushBasedKBAStreamAdapterFactory implements IFeedAdapterFactory {
 
     private static final long serialVersionUID = 1L;
 
-    private static final String NAME = "push_kba_stream";
+    private static final String NAME = "push_kba_stream_feed";
 
     private ARecordType outputType;
 
@@ -39,8 +39,8 @@ public class PushBasedKBAStreamAdapterFactory implements IFeedAdapterFactory {
 
     @Override
     public IDatasourceAdapter createAdapter(IHyracksTaskContext ctx, int partition) throws Exception {
-        PushBasedTwitterAdapter twitterAdapter = new PushBasedTwitterAdapter(configuration, outputType, ctx);
-        return twitterAdapter;
+        PushBasedKBAStreamAdapter kbaStreamAdapter = new PushBasedKBAStreamAdapter(configuration, outputType, ctx);
+        return kbaStreamAdapter;
     }
 
     @Override
