@@ -93,9 +93,9 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
 
     private static class DataProvider implements Runnable {
 
-        public static final String KEY_BATCHSIZE = KBAStreamProcessor.KEY_BATCHIZE;
+        public static final String KEY_BATCHSIZE = KBAStreamFeeder.KEY_BATCHIZE;
         
-        private KBAStreamProcessor kbaDataGenerator;
+        private KBAStreamFeeder kbaDataGenerator;
         private boolean continuePush = true;
         private int batchSize = 5000;;
         private final OutputStream os;
@@ -103,7 +103,7 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
         public DataProvider(Map<String, String> configuration, ARecordType outputtype, int partition, OutputStream os)
                 throws Exception {
             batchSize = Integer.parseInt(configuration.get(KEY_BATCHSIZE));
-            this.kbaDataGenerator = new KBAStreamProcessor(configuration, partition, os);
+            this.kbaDataGenerator = new KBAStreamFeeder(configuration, partition, os);
             this.os = os;
         }
 

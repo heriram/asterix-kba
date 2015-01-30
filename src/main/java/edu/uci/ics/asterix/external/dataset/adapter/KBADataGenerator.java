@@ -20,6 +20,7 @@ import org.trec.kba.streamcorpus.StreamItem;
 import org.tukaani.xz.XZInputStream;
 
 import edu.uci.ics.asterix.external.library.utils.KBACorpusFiles;
+import edu.uci.ics.asterix.external.library.utils.KBAStreamDocument;
 
 /**
  * Generate data stream based on the KBA streams for Asterix

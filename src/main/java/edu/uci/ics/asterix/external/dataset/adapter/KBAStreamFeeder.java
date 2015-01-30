@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package src.main.java.edu.uci.ics.asterix.external.dataset.adapter;
+package edu.uci.ics.asterix.external.dataset.adapter;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -21,12 +21,13 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import edu.uci.ics.asterix.external.library.adaptor.KBADataGenerator.KBAStreamDocIterator;
+import edu.uci.ics.asterix.external.dataset.adapter.KBADataGenerator.KBAStreamDocIterator;
+import edu.uci.ics.asterix.external.library.utils.KBAStreamDocument;
 
 
-public class KBAStreamProcessor {
+public class KBAStreamFeeder {
 
-    private static Logger LOGGER = Logger.getLogger(KBAStreamProcessor.class.getName());
+    private static Logger LOGGER = Logger.getLogger(KBAStreamFeeder.class.getName());
 
     public static final String KEY_DURATION = "duration";
     public static final String KEY_BATCHIZE = "batchsize";
@@ -44,7 +45,7 @@ public class KBAStreamProcessor {
         return streamItemCount;
     }
 
-    public KBAStreamProcessor(Map<String, String> configuration, int partition, OutputStream os) throws Exception {
+    public KBAStreamFeeder(Map<String, String> configuration, int partition, OutputStream os) throws Exception {
         this.partition = partition;
         int batch_size = Integer.parseInt(configuration.get(KEY_BATCHIZE));
         kbaDataGenerator = new KBADataGenerator(batch_size);
