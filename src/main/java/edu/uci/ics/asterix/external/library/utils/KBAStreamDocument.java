@@ -5,13 +5,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.regex.Pattern;
 
 import org.trec.kba.streamcorpus.ContentItem;
 import org.trec.kba.streamcorpus.Language;
 import org.trec.kba.streamcorpus.StreamItem;
 
+import edu.uci.ics.asterix.external.library.utils.ADM.ADMArray;
+import edu.uci.ics.asterix.external.library.utils.ADM.ADMObject;
+import edu.uci.ics.asterix.external.library.utils.ADM.ADMOrderedArray;
+
 public class KBAStreamDocument {
+
+    private final static int ASTERIX_STRING_LENGTH_LIMIT = 64000; // See UTF8StringWriter.java
 
     List<String> mentionedEntities = null;
 
@@ -29,9 +34,8 @@ public class KBAStreamDocument {
     /**
      * Field names
      */
-    protected static String[] fieldNames = { FIELD_STREAM_ID, FIELD_DIR_NAME, FIELD_SOURCE,
-            FIELD_SCHOST, FIELD_TITLE, FIELD_BODY, FIELD_ANCHOR,
-            FIELD_LANGUAGE };
+    protected static String[] fieldNames = { FIELD_STREAM_ID, FIELD_DIR_NAME, FIELD_SOURCE, FIELD_SCHOST, FIELD_TITLE,
+            FIELD_BODY, FIELD_ANCHOR, FIELD_LANGUAGE };
 
     public KBAStreamDocument() {
         this.fields = new HashMap<String, String>();
@@ -50,31 +54,30 @@ public class KBAStreamDocument {
 
         if (language == null)
             return "";
-        
-        if(language.isSetCode())
+
+        if (language.isSetCode())
             return language.getCode();
 
         else if (language.isSetName())
             return language.getName();
-        
+
         return "";
     }
-    
+
     protected void initialize(StreamItem si, String dirName, List<String> mentioned_entities) {
-       
-        
+
         fields = new HashMap<String, String>();
         fields.put(FIELD_STREAM_ID, si.getStream_id());
         fields.put(FIELD_DIR_NAME, dirName);
         fields.put(FIELD_SOURCE, si.getSource());
         fields.put(FIELD_SCHOST, si.getSchost());
-        
+
         ContentItem body = si.getBody();
         fields.put(FIELD_BODY, getCleanVisible(body));
         fields.put(FIELD_LANGUAGE, getLanguage(body));
-        
-        Map<String,ContentItem> oc = si.getOther_content();
-        if (oc!=null) {
+
+        Map<String, ContentItem> oc = si.getOther_content();
+        if (oc != null) {
             fields.put(FIELD_TITLE, getCleanVisible(oc.get("title")));
             fields.put(FIELD_ANCHOR, getCleanVisible(oc.get("anchor")));
         } else {
@@ -88,8 +91,6 @@ public class KBAStreamDocument {
         fields.put(key, value);
     }
 
-    
-    
     public void setLanguage(String language) {
         fields.put(FIELD_LANGUAGE, language);
     }
@@ -115,7 +116,6 @@ public class KBAStreamDocument {
         return date_hour.substring(0, (date_hour.lastIndexOf('-')));
     }
 
-
     public void setMentionedEntity(List<String> entity_list) {
         this.mentionedEntities = entity_list;
     }
@@ -137,20 +137,11 @@ public class KBAStreamDocument {
         }
     }
 
-    public static String strip(String s) {
-        final String specialChars2 = "[" + Pattern.quote("`~!#$%^*()_+[\\];',./{}|:\"<>?") + "]+";
-
-        s = s.replaceAll("(\\s)+", " ");
-        s = s.replaceAll("'s", "");
-        s = s.replaceAll(specialChars2, " ");
-        return s;
-    }
-
     public String getTextNormalized() {
         StringBuilder sb = new StringBuilder(fields.get(FIELD_TITLE).toLowerCase());
         sb.append(" ").append(fields.get(FIELD_BODY).toLowerCase());
         sb.append(" ").append(fields.get(FIELD_ANCHOR).toLowerCase());
-        
+
         return sb.toString();
     }
 
@@ -164,24 +155,24 @@ public class KBAStreamDocument {
      * @return the ADM string
      */
     public String toAdmEquivalent() {
-        StringBuilder sb = new StringBuilder("{");
+        ADMObject adm_object = new ADMObject();
+
         Iterator<Entry<String, String>> it = fields.entrySet().iterator();
-        int i = 0;
-        int size = fields.entrySet().size();
+
         while (it.hasNext()) {
             Entry<String, String> e = it.next();
-            sb.append('\"').append(e.getKey()).append("\":\"");
             String value = e.getValue();
-            if (value == null)
-                value = "";
-            sb.append(value).append("\"");
-            i++;
-            if (i < size)
-                sb.append(",\n");
+            String key = e.getKey();
+            if (value == null) {
+                adm_object.put(key, "");
+            } else if (key.equals(FIELD_BODY)) { // To deal with long string
+                ADMArray admArray = new ADMOrderedArray(StringUtil.breakString(value, ASTERIX_STRING_LENGTH_LIMIT));
+                adm_object.put(key, admArray);
+            } else {
+                adm_object.put(key, value);
+            }
         }
-
-        sb.append("}");
-        return sb.toString();
+        return adm_object.toString();
     }
 
 }
