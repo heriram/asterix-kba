@@ -3,8 +3,19 @@ package edu.uci.ics.asterix.external.library.utils;
 import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class StringUtil {
+    public static final String SPECIAL_CHARACTERS = "`~!#$%^*()_+[\\];',./{}|:\"<>?";
+    
+    public static String cleanUp(String s) {
+        final String specialChars2 = "[" + Pattern.quote(SPECIAL_CHARACTERS) + "]+";
+
+        s = s.replaceAll("(\\s)+", " ");
+        s = s.replaceAll("'s", "");
+        s = s.replaceAll(specialChars2, " ");
+        return s;
+    }
     
     public static String[] wrapString(String str, final int maxLen) {
         int len = str.length();
