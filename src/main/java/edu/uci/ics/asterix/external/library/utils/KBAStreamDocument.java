@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 
 import org.trec.kba.streamcorpus.ContentItem;
 import org.trec.kba.streamcorpus.Language;
@@ -16,12 +17,13 @@ import edu.uci.ics.asterix.external.library.utils.ADM.ADMOrderedArray;
 
 public class KBAStreamDocument {
 
-    private final static int ASTERIX_STRING_LENGTH_LIMIT = 64000; // See UTF8StringWriter.java
+    private final static int ASTERIX_STRING_LENGTH_LIMIT = 60000; // See UTF8StringWriter.java
 
     List<String> mentionedEntities = null;
 
     protected HashMap<String, String> fields;
 
+    public final static String FIELD_DOCUMENT_ID = "doc_id";
     public final static String FIELD_STREAM_ID = "stream_id";
     public final static String FIELD_DIR_NAME = "dir_name";
     public final static String FIELD_SOURCE = "source";
@@ -34,8 +36,8 @@ public class KBAStreamDocument {
     /**
      * Field names
      */
-    protected static String[] fieldNames = { FIELD_STREAM_ID, FIELD_DIR_NAME, FIELD_SOURCE, FIELD_SCHOST, FIELD_TITLE,
-            FIELD_BODY, FIELD_ANCHOR, FIELD_LANGUAGE };
+    protected static String[] fieldNames = { FIELD_DOCUMENT_ID, FIELD_STREAM_ID, FIELD_DIR_NAME, FIELD_SOURCE,
+            FIELD_SCHOST, FIELD_TITLE, FIELD_BODY, FIELD_ANCHOR, FIELD_LANGUAGE };
 
     public KBAStreamDocument() {
         this.fields = new HashMap<String, String>();
@@ -67,6 +69,9 @@ public class KBAStreamDocument {
     protected void initialize(StreamItem si, String dirName, List<String> mentioned_entities) {
 
         fields = new HashMap<String, String>();
+        //StringBuilder docId = new StringBuilder();
+        //docId.append(dirName).append("-").append(si.getStream_id());
+        fields.put(FIELD_DOCUMENT_ID, UUID.randomUUID().toString());
         fields.put(FIELD_STREAM_ID, si.getStream_id());
         fields.put(FIELD_DIR_NAME, dirName);
         fields.put(FIELD_SOURCE, si.getSource());
