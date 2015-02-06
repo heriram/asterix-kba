@@ -3,8 +3,15 @@ package edu.uci.ics.asterix.external.library.utils;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.logging.Logger;
 
+/**
+ * Containing methods that effectively flushes data from a string
+ * to an {@link OutputStream}, mimicking {@link BufferedOutputStream}
+ * but with more flexibility
+ * 
+ * @author heri
+ *
+ */
 public class BufferedStreamWriter {
     private OutputStream os;
     private ByteBuffer outputBuffer = ByteBuffer.allocate(32 * 1024);
@@ -31,6 +38,12 @@ public class BufferedStreamWriter {
         outputBuffer.put(dst);
     }
 
+    /**
+     * Write the content of an ADM object string into outputstream
+     * 
+     * @param streamADMString
+     * @throws IOException
+     */
     public void writeStreamADMString(String streamADMString) throws IOException {
         byte[] b = (streamADMString + "\n").getBytes();
         if (outputBuffer.position() + b.length > outputBuffer.limit()) {
