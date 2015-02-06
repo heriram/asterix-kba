@@ -17,7 +17,7 @@ import edu.uci.ics.asterix.external.library.utils.ADM.ADMOrderedArray;
 
 public class KBAStreamDocument {
 
-    private final static int ASTERIX_STRING_LENGTH_LIMIT = 60000; // See UTF8StringWriter.java
+    protected final static int ASTERIX_STRING_LENGTH_LIMIT = 60000; // See UTF8StringWriter.java
 
     List<String> mentionedEntities = null;
 
