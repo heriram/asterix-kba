@@ -15,7 +15,6 @@
 package edu.uci.ics.asterix.external.dataset.adapter;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -24,10 +23,12 @@ import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.SequenceInputStream;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,14 +41,13 @@ import org.trec.kba.streamcorpus.StreamItem;
 import org.tukaani.xz.XZInputStream;
 
 import edu.uci.ics.asterix.common.feeds.api.IFeedAdapter;
-import edu.uci.ics.asterix.external.dataset.adapter.StreamBasedAdapter;
+import edu.uci.ics.asterix.external.library.utils.BufferedStreamWriter;
 import edu.uci.ics.asterix.external.library.utils.KBACorpusFiles;
 import edu.uci.ics.asterix.external.library.utils.KBAStreamDocument;
+import edu.uci.ics.asterix.external.library.utils.KBAStreamDocumentWriter;
 import edu.uci.ics.asterix.om.types.ARecordType;
 import edu.uci.ics.asterix.runtime.operators.file.AsterixTupleParserFactory;
-import edu.uci.ics.hyracks.api.comm.IFrameWriter;
 import edu.uci.ics.hyracks.api.context.IHyracksTaskContext;
-import edu.uci.ics.hyracks.dataflow.std.file.FileSplit;
 import edu.uci.ics.hyracks.dataflow.std.file.ITupleParserFactory;
 
 /**
@@ -63,58 +63,66 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
 
     private static final Logger LOGGER = Logger.getLogger(KBAStreamGeneratorAdapter.class.getName());
 
-    
+    private ExecutorService executorService = Executors.newCachedThreadPool();
 
-    private FileContentProvider contentProvider;
+    private PipedOutputStream outputStream = new PipedOutputStream();
 
-    //private final KBAStreamServer streamDocServer;
+    private PipedInputStream inputStream = new PipedInputStream(outputStream);
+
+    private LinkedBlockingQueue<File> dateHourDirectoryList;
+
+    private final KBAStreamServer streamDocServer;
 
     public KBAStreamGeneratorAdapter(Map<String, String> configuration, ITupleParserFactory parserFactory,
             ARecordType outputtype, int partition, IHyracksTaskContext ctx) throws Exception {
         super(parserFactory, outputtype, ctx, partition);
-        //this.streamDocServer = new KBAStreamServer(configuration, partition, outputtype, outputStream, executorService);
-        String dirSplits[] = configuration.get(AsterixTupleParserFactory.KEY_PATH).split(",");
-        this.contentProvider = new FileContentProvider(dirSplits, ctx.getFrameSize());
-        
+        configureDateHourDirectories(configuration, partition);
+        this.streamDocServer = new KBAStreamServer(dateHourDirectoryList, partition, outputtype, ctx.getFrameSize(),
+                outputStream, executorService);
     }
 
     @Override
     public InputStream getInputStream(int partition) throws IOException {
-        //streamDocServer.start();
-        return contentProvider.getInputStream(partition);
-        //return inputStream;
+        streamDocServer.start();
+        return inputStream;
     }
-    
-    
+
+    private void configureDateHourDirectories(Map<String, String> configuration, int partition) {
+        String corpusDir = configuration.get(AsterixTupleParserFactory.KEY_PATH).split(",")[partition];
+        File dateHourDirs[] = KBACorpusFiles.getDateHourDirs(corpusDir);
+        this.dateHourDirectoryList = new LinkedBlockingQueue<File>(Arrays.asList(dateHourDirs));
+    }
+
     private static class FileContentProvider {
         private String[] directorySplits;
-        private int maxTupleSize=Integer.MAX_VALUE;
+        private int maxTupleSize = Integer.MAX_VALUE;
+        private BufferedStreamWriter writer;
 
-        public FileContentProvider(String [] dir_split, int frameSize) {
-            this.directorySplits = dir_split;
-            this.maxTupleSize = (int)(0.80*frameSize)/2;
+        public FileContentProvider(int frameSize, OutputStream os) throws Exception {
+            this.maxTupleSize = (int) (0.80 * frameSize) / 2;
+            this.writer = new BufferedStreamWriter(os);
         }
 
-        private InputStream readChunk(File inputfile, String dirname) throws TException, InterruptedException,
-                IOException {
+        public FileContentProvider(String[] dir_split, int frameSize) throws Exception {
+            this.directorySplits = dir_split;
+            this.maxTupleSize = (int) (0.80 * frameSize) / 2;
+        }
+
+        private void readChunk(File inputfile, String dirname) throws TException, InterruptedException, IOException {
             FileInputStream fis = new FileInputStream(inputfile);
             BufferedInputStream bis = new BufferedInputStream(new XZInputStream(fis), (32 * 1024));
             final TTransport transport = new TIOStreamTransport(bis);
             final TBinaryProtocol protocol = new TBinaryProtocol(transport);
             transport.open();
-            StringBuilder sb = new StringBuilder();
             try {
                 while (true) {
                     final StreamItem item = new StreamItem();
                     item.read(protocol);
-                    KBAStreamDocument kbadoc = new KBAStreamDocument(item, dirname);
-                    String admString = kbadoc.toAdmEquivalent();
-                    
-                    int size = admString.getBytes().length;
-                    if (size>maxTupleSize)
-                        LOGGER.log(Level.INFO, "Reccord too long?: "+ size + " b. Could be Discarded.");
-                    
-                    sb.append(admString).append('\n');
+
+                    KBAStreamDocumentWriter kbadocWriter = new KBAStreamDocumentWriter(item, dirname, writer,
+                            maxTupleSize);
+                    kbadocWriter.writeToOutput();
+
                 }
 
             } catch (TTransportException te) {
@@ -124,11 +132,10 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
                 } else {
                     throw te;
                 }
+            } finally {
+                transport.close();
+                fis.close();
             }
-            transport.close();
-            fis.close();
-
-            return new ByteArrayInputStream(sb.toString().getBytes());
         }
 
         /**
@@ -140,7 +147,6 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
          * @throws IOException
          */
         public InputStream getInputStream(int partition) throws IOException {
-            //final File directory = directorySplits[partition].getLocalFile().getFile();
             final File directory = new File(directorySplits[partition]);
             final File[] files = KBACorpusFiles.getXZFiles(directory);
 
@@ -160,8 +166,8 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
                     index++;
                     try {
                         File file = files[index - 1];
-
-                        return readChunk(file, directory.getName());
+                        return null;
+                        //return readChunk(file, directory.getName());
 
                     } catch (Exception ex) {
                         throw new RuntimeException("Error getting the stream content", ex);
@@ -174,20 +180,18 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
 
     }
 
-
-   /* private static class KBAStreamServer {
+    private static class KBAStreamServer {
         private final DataProvider dataProvider;
         private final ExecutorService executorService;
 
-        public KBAStreamServer(Map<String, String> configuration, int partition, ARecordType outputtype,
-                OutputStream os, ExecutorService executorService) throws Exception {
-            this.dataProvider = new DataProvider(configuration, outputtype, partition, os);
+        public KBAStreamServer(LinkedBlockingQueue<File> dateHourDirectoryList, int partition, ARecordType outputtype,
+                int maxFrameSize, OutputStream os, ExecutorService executorService) throws Exception {
+            this.dataProvider = new DataProvider(dateHourDirectoryList, outputtype, partition, maxFrameSize, os);
             this.executorService = executorService;
         }
 
         public void stop() throws IOException {
             dataProvider.stop();
-            executorService.shutdown();
         }
 
         public void start() {
@@ -197,33 +201,50 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
     }
 
     private static class DataProvider implements Runnable {
-
-        public static final String KEY_BATCHSIZE = KBAStreamFeeder.KEY_BATCHIZE;
-
-        private KBAStreamFeeder kbaDataGenerator;
+        private FileContentProvider contentProvider;
         private boolean continuePush = true;
-        private int batchSize = 5000;;
+        private LinkedBlockingQueue<File> dateHourDirectoryList;
         private final OutputStream os;
+        int numFiles = 0;
 
-        public DataProvider(Map<String, String> configuration, ARecordType outputtype, int partition, OutputStream os)
-                throws Exception {
-            batchSize = Integer.parseInt(configuration.get(KEY_BATCHSIZE));
-            this.kbaDataGenerator = new KBAStreamFeeder(configuration, partition, os);
+        public DataProvider(LinkedBlockingQueue<File> dateHourDirectoryList, ARecordType outputtype, int partition,
+                int maxFrameSize, OutputStream os) throws Exception {
+            //String corpusDirectory = configuration.get(AsterixTupleParserFactory.KEY_PATH).split(",")[partition];
+            this.contentProvider = new FileContentProvider(maxFrameSize, os);
             this.os = os;
+            //this.dateHourDirs = KBACorpusFiles.getDateHourDirs(corpusDirectory);
+            this.dateHourDirectoryList = dateHourDirectoryList;
+
         }
 
         @Override
         public void run() {
             boolean moreData = true;
-
             while (true) {
                 try {
                     while (moreData && continuePush) {
-                        moreData = kbaDataGenerator.setNextRecordBatch(batchSize);
+                        File dateHourDir = dateHourDirectoryList.take();
+                        moreData = !dateHourDirectoryList.isEmpty();
+
+                        LOGGER.log(Level.INFO, "Reading chunks from " + dateHourDir);
+
+                        final File[] chunks = KBACorpusFiles.getXZFiles(dateHourDir);
+                        String dirName = dateHourDir.getName();
+                        // Get and feed next batch
+                        for (File chunk : chunks) {
+                            LOGGER.log(Level.INFO, "File #" + (++this.numFiles) + ". Name: " + chunk.getName());
+                            if (this.numFiles == 880)
+                                System.out.println("Check!!!");;
+
+                            if (!continuePush)
+                                break;
+                            contentProvider.readChunk(chunk, dirName);
+                        }
                     }
                     os.close();
                     break;
                 } catch (Exception e) {
+                    e.printStackTrace();
                     if (LOGGER.isLoggable(Level.WARNING)) {
                         LOGGER.warning("Exception in adaptor " + e.getMessage());
                     }
@@ -235,13 +256,14 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
             continuePush = false;
         }
 
-    }*/
+    }
 
-   /* @Override
+    @Override
     public void stop() throws Exception {
+        LOGGER.info(KBAStreamGeneratorAdapter.class.getName() + " stopped successfully.");
         streamDocServer.stop();
-    }*/
- 
+    }
+
     @Override
     public DataExchangeMode getDataExchangeMode() {
         return DataExchangeMode.PUSH;
@@ -249,19 +271,13 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
 
     @Override
     public boolean handleException(Exception e) {
-        /*try {
+        try {
             streamDocServer.stop();
         } catch (Exception re) {
             re.printStackTrace();
             return false;
         }
-        streamDocServer.start();*/
+        streamDocServer.start();
         return true;
-    }
-
-    @Override
-    public void stop() throws Exception {
-        // TODO Auto-generated method stub
-        LOGGER.info(KBAStreamGeneratorAdapter.class.getName()+ " stopped successfully.");
     }
 }

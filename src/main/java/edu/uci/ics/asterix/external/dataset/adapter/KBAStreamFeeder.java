@@ -30,7 +30,7 @@ public class KBAStreamFeeder {
     private static Logger LOGGER = Logger.getLogger(KBAStreamFeeder.class.getName());
 
     public static final String KEY_DURATION = "duration";
-    public static final String KEY_BATCHIZE = "batchsize";
+    public static final String KEY_BATCHIZE = "batch-size";
 
     private KBAStreamDocIterator kbaStreamIterator = null;
     private int partition;
