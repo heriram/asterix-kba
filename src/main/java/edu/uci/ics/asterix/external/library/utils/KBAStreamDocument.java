@@ -17,7 +17,7 @@ import edu.uci.ics.asterix.external.library.utils.ADM.ADMOrderedArray;
 
 public class KBAStreamDocument {
 
-    protected final static int ASTERIX_STRING_LENGTH_LIMIT = 60000; // See UTF8StringWriter.java
+    protected final static int ASTERIX_STRING_LENGTH_LIMIT = 32745; // See UTF8StringWriter.java
 
     List<String> mentionedEntities = null;
 
@@ -44,7 +44,7 @@ public class KBAStreamDocument {
     }
 
     public KBAStreamDocument(StreamItem si, String dirName) {
-        initialize(si, dirName, null);
+        initialize(si, dirName);
     }
 
     public KBAStreamDocument(StreamItem si, String dirName, List<String> mentioned_entities) {
@@ -66,8 +66,7 @@ public class KBAStreamDocument {
         return "";
     }
 
-    protected void initialize(StreamItem si, String dirName, List<String> mentioned_entities) {
-
+    protected void initialize(StreamItem si, String dirName) {
         fields = new HashMap<String, String>();
         //StringBuilder docId = new StringBuilder();
         //docId.append(dirName).append("-").append(si.getStream_id());
@@ -89,6 +88,12 @@ public class KBAStreamDocument {
             fields.put(FIELD_TITLE, "");
             fields.put(FIELD_ANCHOR, "");
         }
+        
+    }
+    
+    protected void initialize(StreamItem si, String dirName, List<String> mentioned_entities) {
+        initialize(si, dirName);
+        // TODO Find a better way if value is null
         this.mentionedEntities = mentioned_entities;
     }
 
@@ -131,14 +136,14 @@ public class KBAStreamDocument {
 
     public static String getCleanVisible(ContentItem ci) {
         if (ci == null)
-            return null;
+            return "";
         if (ci.getClean_visible() == null || ci.getClean_visible().length() == 0)
-            return null;
+            return "";
 
         if (ci.getClean_visible().length() > 0) {
             return ci.getClean_visible();
         } else {
-            return null;
+            return "";
         }
     }
 
