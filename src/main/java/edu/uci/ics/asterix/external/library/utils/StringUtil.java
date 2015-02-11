@@ -7,6 +7,10 @@ import java.util.regex.Pattern;
 
 public class StringUtil {
     public static final String SPECIAL_CHARACTERS = "`~!#$%^*()_+[\\];',./{}|:\"<>?";
+    
+    private byte[] value; 
+    
+    
 
     public static String cleanUp(String s) {
         final String specialChars2 = "[" + Pattern.quote(SPECIAL_CHARACTERS) + "]+";
@@ -15,6 +19,18 @@ public class StringUtil {
         s = s.replaceAll("'s", "");
         s = s.replaceAll(specialChars2, " ");
         return s;
+    }
+    
+    public static byte[] getBytes(String str) {
+        int length = str.length();
+        char buffer[] = new char[length];
+        
+        str.getChars(0, length, buffer, 0);
+        byte b[] = new byte[length];
+        for (int j = 0; j < length; j++) {
+            b[j] = (byte) buffer[j];
+        }
+        return b;
     }
 
     public static String[] wrapString(String str, final int maxLen) {
