@@ -2,25 +2,77 @@ package edu.uci.ics.asterix.external.library.utils;
 
 import java.nio.CharBuffer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.regex.Pattern;
+import java.util.Set;
 
 public class StringUtil {
     public static final String SPECIAL_CHARACTERS = "`~!#$%^*()_+[\\];',./{}|:\"<>?";
-    
-    private byte[] value; 
-    
-    
 
-    public static String cleanUp(String s) {
-        final String specialChars2 = "[" + Pattern.quote(SPECIAL_CHARACTERS) + "]+";
+    public static final char REPEATING_SPACES[] = { '\n', '\r', '\t', ' ' };
 
-        s = s.replaceAll("(\\s)+", " ");
-        s = s.replaceAll("'s", "");
-        s = s.replaceAll(specialChars2, " ");
+    public static final Set<Character> SPECIAL_CHAR_SET = toCharSet(SPECIAL_CHARACTERS);
+
+    public static final Set<Character> REPEATING_SPACE_SET = toCharSet(REPEATING_SPACES);
+
+
+    public static Set<Character> toCharSet(char charArray[]) {
+        Set<Character> charSet = new HashSet<Character>();
+
+        for (char c : charArray) {
+            charSet.add(c);
+        }
+
+        return charSet;
+    }
+
+    public static Set<Character> toCharSet(String str) {
+        char chars[] = str.toCharArray();
+        return toCharSet(chars);
+    }
+
+    public static String removeSpecialChars(String s) {
+        int len = s.length();
+        char dstStrBuffer[] = new char[len];
+        char srcStrBuffer[] = s.toCharArray();
+
+        int j = 0;
+
+        for (int i = 0; i < len; i++) {
+
+            char c = srcStrBuffer[i];
+            switch (c) {
+                case '\'': // Remove "'s"
+                    c = srcStrBuffer[i + 1];
+                    if (c=='s') { 
+                        i++;
+                    }
+                    break;
+                case '\n':
+                case '\r':
+                case '\t':
+                case ' ':
+                    if (j>0 && REPEATING_SPACE_SET.contains(dstStrBuffer[j - 1]))
+                        break;
+                default:
+                    if (!SPECIAL_CHAR_SET.contains(c)) {                        
+                        dstStrBuffer[j] = c;
+                        j++;
+                    }
+            }
+
+        }
+        s = new String(dstStrBuffer).trim();
+
         return s;
     }
     
+    /**
+     * Get the string bytes encoding 
+     * 
+     * @param str
+     * @return
+     */
     public static byte[] getBytes(String str) {
         int length = str.length();
         char buffer[] = new char[length];
@@ -31,6 +83,18 @@ public class StringUtil {
             b[j] = (byte) buffer[j];
         }
         return b;
+    }
+    
+    public static String concatenate(String strings[], char connector) {
+        int i=0;
+        StringBuilder sb = new StringBuilder(strings[i]);
+        
+        while(++i<strings.length) {
+            sb.append(connector);
+            sb.append(strings[i]);
+        }
+        
+        return sb.toString();
     }
 
     public static String[] wrapString(String str, final int maxLen) {
@@ -90,7 +154,7 @@ public class StringUtil {
         int endIndex = maxLen - 1;
         while (endIndex < len) {
             endIndex = Math.min(lastIndexOf(str, beginIndex, endIndex, ' '), len - 1);
-            subStrings.add(str.substring(beginIndex, endIndex) + '\n');
+            subStrings.add(str.substring(beginIndex, endIndex));
             beginIndex = endIndex + 1;
             endIndex = beginIndex + maxLen - 2;
 
