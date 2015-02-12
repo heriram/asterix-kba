@@ -22,9 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.io.SequenceInputStream;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,9 +40,8 @@ import org.tukaani.xz.XZInputStream;
 
 import edu.uci.ics.asterix.common.feeds.api.IFeedAdapter;
 import edu.uci.ics.asterix.external.library.utils.BufferedStreamWriter;
+import edu.uci.ics.asterix.external.library.utils.KBAAdmStreamDocument;
 import edu.uci.ics.asterix.external.library.utils.KBACorpusFiles;
-import edu.uci.ics.asterix.external.library.utils.KBAStreamDocument;
-import edu.uci.ics.asterix.external.library.utils.KBAStreamDocumentWriter;
 import edu.uci.ics.asterix.om.types.ARecordType;
 import edu.uci.ics.asterix.runtime.operators.file.AsterixTupleParserFactory;
 import edu.uci.ics.hyracks.api.context.IHyracksTaskContext;
@@ -88,24 +85,19 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
     }
 
     private void configureDateHourDirectories(Map<String, String> configuration, int partition) {
+        // TODO A better way to deal with different node needed
         String corpusDir = configuration.get(AsterixTupleParserFactory.KEY_PATH).split(",")[partition];
         File dateHourDirs[] = KBACorpusFiles.getDateHourDirs(corpusDir);
         this.dateHourDirectoryList = new LinkedBlockingQueue<File>(Arrays.asList(dateHourDirs));
     }
 
     private static class FileContentProvider {
-        private String[] directorySplits;
         private int maxTupleSize = Integer.MAX_VALUE;
         private BufferedStreamWriter writer;
 
         public FileContentProvider(int frameSize, OutputStream os) throws Exception {
             this.maxTupleSize = (int) (0.80 * frameSize) / 2;
             this.writer = new BufferedStreamWriter(os);
-        }
-
-        public FileContentProvider(String[] dir_split, int frameSize) throws Exception {
-            this.directorySplits = dir_split;
-            this.maxTupleSize = (int) (0.80 * frameSize) / 2;
         }
 
         private void readChunk(File inputfile, String dirname) throws TException, InterruptedException, IOException {
@@ -119,9 +111,9 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
                     final StreamItem item = new StreamItem();
                     item.read(protocol);
 
-                    KBAStreamDocumentWriter kbadocWriter = new KBAStreamDocumentWriter(item, dirname, writer,
-                            maxTupleSize);
-                    kbadocWriter.writeToOutput();
+                    // Convert to this steam item to and adm object and flush it to the outputstream
+                    KBAAdmStreamDocument kbaAdmdoc = new KBAAdmStreamDocument(item, dirname, writer, maxTupleSize);
+                    kbaAdmdoc.writeToOutputSream();
 
                 }
 
@@ -136,46 +128,6 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
                 transport.close();
                 fis.close();
             }
-        }
-
-        /**
-         * Perform a sequential read of the current file list
-         * 
-         * @param partition
-         *            partition number of the directory
-         * @return {@link InputStream} for the file contents
-         * @throws IOException
-         */
-        public InputStream getInputStream(int partition) throws IOException {
-            final File directory = new File(directorySplits[partition]);
-            final File[] files = KBACorpusFiles.getXZFiles(directory);
-
-            if (files == null)
-                throw new IOException("cannot get contents from an empty file list.");
-
-            Enumeration<InputStream> inputstream_enumeration = new Enumeration<InputStream>() {
-                int index;
-
-                @Override
-                public boolean hasMoreElements() {
-                    return index < files.length;
-                }
-
-                @Override
-                public InputStream nextElement() {
-                    index++;
-                    try {
-                        File file = files[index - 1];
-                        return null;
-                        //return readChunk(file, directory.getName());
-
-                    } catch (Exception ex) {
-                        throw new RuntimeException("Error getting the stream content", ex);
-                    }
-                }
-            };
-            return new SequenceInputStream(inputstream_enumeration);
-
         }
 
     }
@@ -206,20 +158,20 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
         private LinkedBlockingQueue<File> dateHourDirectoryList;
         private final OutputStream os;
         int numFiles = 0;
+        int numHours = 0;
 
         public DataProvider(LinkedBlockingQueue<File> dateHourDirectoryList, ARecordType outputtype, int partition,
                 int maxFrameSize, OutputStream os) throws Exception {
-            //String corpusDirectory = configuration.get(AsterixTupleParserFactory.KEY_PATH).split(",")[partition];
             this.contentProvider = new FileContentProvider(maxFrameSize, os);
             this.os = os;
-            //this.dateHourDirs = KBACorpusFiles.getDateHourDirs(corpusDirectory);
             this.dateHourDirectoryList = dateHourDirectoryList;
-
+            this.numHours = dateHourDirectoryList.size();
         }
 
         @Override
         public void run() {
             boolean moreData = true;
+            LOGGER.log(Level.INFO, "Feed adapter created and loaded successfully. Now start ingesting data.");
             while (true) {
                 try {
                     while (moreData && continuePush) {
@@ -232,15 +184,16 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
                         String dirName = dateHourDir.getName();
                         // Get and feed next batch
                         for (File chunk : chunks) {
-                            LOGGER.log(Level.INFO, "File #" + (++this.numFiles) + ". Name: " + chunk.getName());
-                            if (this.numFiles == 880)
-                                System.out.println("Check!!!");;
-
+                            if (((++this.numFiles) % 100) == 0) {
+                                LOGGER.log(Level.INFO, "Processed " + (this.numFiles) + " files out of "
+                                        + (chunks.length * this.numHours) + ".");
+                            }
                             if (!continuePush)
                                 break;
                             contentProvider.readChunk(chunk, dirName);
                         }
                     }
+                    
                     os.close();
                     break;
                 } catch (Exception e) {
@@ -250,6 +203,8 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
                     }
                 }
             }
+            LOGGER.log(Level.INFO, "Reached the end of this feed - i.e., no more data to push.");
+            
         }
 
         public void stop() {
