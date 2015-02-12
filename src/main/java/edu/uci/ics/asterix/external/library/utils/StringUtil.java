@@ -35,16 +35,19 @@ public class StringUtil {
         int len = s.length();
         char dstStrBuffer[] = new char[len];
         char srcStrBuffer[] = s.toCharArray();
-
-        int j = 0;
-
+ 
+        int count = 0;
         for (int i = 0; i < len; i++) {
-
             char c = srcStrBuffer[i];
             switch (c) {
                 case '\'': // Remove "'s"
-                    c = srcStrBuffer[i + 1];
-                    if (c=='s') { 
+                    char next_c = srcStrBuffer[i + 1];
+                    if (next_c=='s') { 
+                        i++;
+                    } else if (next_c=='t') { // keep 't forms for now
+                        dstStrBuffer[count] = c; 
+                        dstStrBuffer[++count] = next_c;
+                        count++;
                         i++;
                     }
                     break;
@@ -52,19 +55,18 @@ public class StringUtil {
                 case '\r':
                 case '\t':
                 case ' ':
-                    if (j>0 && REPEATING_SPACE_SET.contains(dstStrBuffer[j - 1]))
+                    if (count>0 && REPEATING_SPACE_SET.contains(dstStrBuffer[count - 1]))
                         break;
                 default:
                     if (!SPECIAL_CHAR_SET.contains(c)) {                        
-                        dstStrBuffer[j] = c;
-                        j++;
+                        dstStrBuffer[count] = c;
+                        count++;
                     }
             }
 
         }
-        s = new String(dstStrBuffer).trim();
 
-        return s;
+        return new String(dstStrBuffer, 0, count);
     }
     
     /**
