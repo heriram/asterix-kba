@@ -5,94 +5,117 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.Analyzer;
 
-import edu.uci.ics.asterix.external.library.PhraseFinder;
-import edu.uci.ics.asterix.external.library.utils.TextAnalysis;
-import edu.uci.ics.asterix.external.library.IExternalScalarFunction;
-import edu.uci.ics.asterix.external.library.IFunctionHelper;
-import edu.uci.ics.asterix.external.library.java.JObjects.JOrderedList;
 import edu.uci.ics.asterix.external.library.java.IJObject;
-import edu.uci.ics.asterix.external.library.java.JTypeTag;
+import edu.uci.ics.asterix.external.library.java.JObjects.JOrderedList;
 import edu.uci.ics.asterix.external.library.java.JObjects.JRecord;
 import edu.uci.ics.asterix.external.library.java.JObjects.JString;
 import edu.uci.ics.asterix.external.library.java.JObjects.JUnorderedList;
+import edu.uci.ics.asterix.external.library.java.JTypeTag;
+import edu.uci.ics.asterix.external.library.utils.StringUtil;
+import edu.uci.ics.asterix.external.library.utils.TextAnalysis;
 
 public class KBAStreamFilteringFunction implements IExternalScalarFunction {
-    private Set<String> nameVariants = null;
-    private JUnorderedList mentionList = null;
-    
+    private static final Logger LOGGER = Logger.getLogger(KBAStreamFilteringFunction.class.getName());
+    private String nameVariants[][] = null;
+    private JUnorderedList mentionList;
+    private boolean bodyContentIsList = true;
+    private final Analyzer ANALYZER = TextAnalysis.getAnalyzer();
+
     @Override
     public void deinitialize() {
     }
 
     @Override
     public void initialize(IFunctionHelper functionHelper) throws Exception {
-        mentionList = new JUnorderedList(functionHelper.getObject(JTypeTag.STRING));
-        
+        LOGGER.info("Initializing KBAStreamFilteringFunction by loading the set of entities.");
+        this.mentionList = new JUnorderedList(functionHelper.getObject(JTypeTag.STRING));
+
         // Load the entities into memory for faster access
-        nameVariants = new HashSet<String>();
-        KBATopicEntityLoader.loadNameVariants(nameVariants);
+        this.nameVariants = KBATopicEntityLoader.loadNameVariants(ANALYZER);
+
+        JRecord inputRecord = (JRecord) functionHelper.getArgument(0);
+        switch (inputRecord.getFields()[3].getTypeTag()) {
+            case ORDEREDLIST:
+                bodyContentIsList = true;
+                break;
+            default:
+                bodyContentIsList = false;
+        }
     }
 
-    
-    private String getContent(JString titleContent, JOrderedList bodyContent) {
-     // Concatenate the fields before searching
-        StringBuilder sb = new StringBuilder(titleContent.getValue());
-        
-        for (int i=0; i<bodyContent.size(); i++) {
-            sb.append(" ");
-            sb.append(((JString)bodyContent.getElement(i)).getValue());
-        }
-        
-        return sb.toString();
-    }
-    
     /*
      * Checking entity mentions in a text
      */
-    private void findEntities(IFunctionHelper functionHelper, JRecord inputRecord, Set<String> nameVariants) throws Exception {
-        if (nameVariants == null || nameVariants.isEmpty())
+    private void findEntities(IFunctionHelper functionHelper, String nameVariants[][]) throws Exception {
+        if (nameVariants == null)
             throw new Exception("Cannot start searching over a null or an empty set... "
                     + "Please initialize the name variant set first.");
-        
-        IJObject[] fields = inputRecord.getFields();
-        
-        JString titleText = (JString) fields[2];  //.getValueByName("title_cleansed");
-        JOrderedList bodyText = (JOrderedList) fields[3]; //inputRecord.getValueByName("body_cleansed");
 
-        
-        Analyzer analyzer = TextAnalysis.getAnalyzer();
-        
-        String content = getContent(titleText, bodyText);
+        this.mentionList.clear();
+        JRecord inputRecord = (JRecord) functionHelper.getArgument(0);
+        IJObject[] fields = inputRecord.getFields();
+
+        JString titleText = (JString) fields[2]; // Title field
+
+        IJObject bodyField = fields[3]; // Body field
+
+        StringBuilder sb = new StringBuilder(titleText.getValue());
+        if (bodyContentIsList) {
+            int size = ((JOrderedList) bodyField).size();
+            for (int i = 0; i < size; i++) {
+                JString element = (JString) ((JOrderedList) bodyField).getElement(i);
+                sb.append(" " + element.getValue());
+            }
+        } else { // It is assumed to be a JString
+            sb.append(" " + ((JString) bodyField).getValue());
+        }
 
         Map<String, Set<Integer>> analyzed_text = new HashMap<String, Set<Integer>>();
-        TextAnalysis.analyze(analyzer, content, analyzed_text);
+        TextAnalysis.analyze(ANALYZER, sb.toString(), analyzed_text);
 
         // Find all entities mentioned in the text
-        Iterator<String> nameVariantsIterator = nameVariants.iterator();
-        while (nameVariantsIterator.hasNext()) {
-            String name = nameVariantsIterator.next();
-            if (PhraseFinder.find(analyzed_text, TextAnalysis.analyze(analyzer, name)) == true) {
+        for (int i = 0; i < nameVariants.length; i++) {
+            if (PhraseFinder.find(analyzed_text, nameVariants[i]) == true) {
                 JString newField = (JString) functionHelper.getObject(JTypeTag.STRING);
-                newField.setValue(name);
+                newField.setValue(StringUtil.concatenate(nameVariants[i], ' '));
                 mentionList.add(newField);
             }
         }
 
     }
     
+
+
     @Override
     public void evaluate(IFunctionHelper functionHelper) throws Exception {
         // Get the input
         JRecord inputRecord = (JRecord) functionHelper.getArgument(0);
-        
+
         // Check entity mentions - store found entities in mentionList
-        findEntities(functionHelper, inputRecord, nameVariants);
+        findEntities(functionHelper, nameVariants);
 
-        inputRecord.addField("mentions", mentionList);
+        int num_found = mentionList.size();
 
+        if (num_found > 0) {
+            LOGGER.log(Level.INFO, "Mention list has " + num_found + " elements.");
+            
+        }
+        IJObject[] fields = inputRecord.getFields();
+        int fieldLength = fields.length;
+        
+        
+        if (fieldLength>9) {
+            inputRecord.setValueAtPos(9, mentionList);
+            //inputRecord.setField("mentions", mentionList);
+            
+        } else 
+            inputRecord.addField("mentions", mentionList);
+        
         functionHelper.setResult(inputRecord);
     }
 
