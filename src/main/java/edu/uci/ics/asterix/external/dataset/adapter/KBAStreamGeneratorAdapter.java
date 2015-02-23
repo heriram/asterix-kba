@@ -184,7 +184,7 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
                         String dirName = dateHourDir.getName();
                         // Get and feed next batch
                         for (File chunk : chunks) {
-                            if (((++this.numFiles) % 100) == 0) {
+                            if (((++this.numFiles) % 50) == 0) {
                                 LOGGER.log(Level.INFO, "Processed " + (this.numFiles) + " files out of "
                                         + (chunks.length * this.numHours) + ".");
                             }
@@ -203,7 +203,8 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
                     }
                 }
             }
-            LOGGER.log(Level.INFO, "Reached the end of this feed - i.e., no more data to push.");
+            LOGGER.log(Level.INFO, "Reached the end of this feed - i.e., no more data to push or"
+                    + " it has been interrupted/stopped manually.");
             
         }
 
