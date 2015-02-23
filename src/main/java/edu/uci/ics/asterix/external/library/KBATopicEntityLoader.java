@@ -1,6 +1,9 @@
 package edu.uci.ics.asterix.external.library;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
@@ -11,16 +14,33 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import org.apache.commons.io.IOUtils;
+import edu.uci.ics.asterix.external.library.utils.TextAnalysis;
+
+//import org.apache.commons.io.IOUtils;
 
 
 public class KBATopicEntityLoader {
     public static final String ENTITY_LOOKUP_FILE = System.getProperty("user.dir") + "/name_variants_lookup.json";
 
     private static final Logger LOGGER = Logger.getLogger(KBATopicEntityLoader.class.getName());
+    
+    public static String readInputStreamAsString(InputStream in) 
+            throws IOException {
+
+            InputStream bis = new BufferedInputStream(in);
+            ByteArrayOutputStream buf = new ByteArrayOutputStream();
+            int result = bis.read();
+            while(result != -1) {
+              byte b = (byte)result;
+              buf.write(b);
+              result = bis.read();
+            }        
+            return buf.toString();
+        }
 
     /**
      * Read the topic entities and all related aliases from a JSON file and load them into a list (Map) of
@@ -38,7 +58,7 @@ public class KBATopicEntityLoader {
             InputStream is = new FileInputStream(pathname);
 
             // Load to json object
-            JSONObject ejson = new JSONObject(IOUtils.toString(is, Charset.forName("utf-8")));
+            JSONObject ejson = new JSONObject(readInputStreamAsString(is));
 
             /* Convert json to a list of doc fields - ie., list of stream docs */
             Iterator<String> it = ejson.keys();
@@ -92,11 +112,11 @@ public class KBATopicEntityLoader {
             InputStream is = new FileInputStream(pathname);
 
             // Load to json object
-            JSONObject ejson = new JSONObject(IOUtils.toString(is, Charset.forName("utf-8")));
+            //JSONObject ejson = new JSONObject(IOUtils.toString(is, Charset.forName("utf-8")));
+            JSONObject ejson = new JSONObject(readInputStreamAsString(is));
 
             /* Convert json to a list of doc fields - ie., list of stream docs */
             Iterator<String> it = ejson.keys();
-            TopicEntity topicEntity = null;
             int n = 0;
             while (it.hasNext() && n < max) {
                 String key = it.next();
@@ -119,6 +139,31 @@ public class KBATopicEntityLoader {
         
         log(name_variants.size() + " name variants loaded");
 
+    }
+    
+    public static String[][] loadAnalyzedNameVariants(Analyzer analyzer, String pathname, int max) {
+        Set<String> nv = new HashSet<String>();
+        loadNameVariants(pathname, nv, max);
+        Iterator<String> it = nv.iterator();
+        String[][] nameVariants = new String[nv.size()][];
+        int i = 0;
+        while (it.hasNext()) {
+            nameVariants[i] = TextAnalysis.analyze(analyzer, it.next());            
+            i++;
+        }
+        return nameVariants;
+    }
+    
+    /**
+     * Read all topic entities and all related aliases from a JSON file (default file)
+     * and load them into a list (set) of name variants - pre-analyze the names for performance
+     * 
+     * @param analyzer
+     * @return String[][]
+     */
+    
+    public static String[][] loadNameVariants(Analyzer analyzer) {
+        return loadAnalyzedNameVariants(analyzer, ENTITY_LOOKUP_FILE, Integer.MAX_VALUE);
     }
 
     /**
