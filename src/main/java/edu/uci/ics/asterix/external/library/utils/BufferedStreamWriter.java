@@ -45,7 +45,7 @@ public class BufferedStreamWriter {
      * @throws IOException
      */
     public void writeStreamADMString(String streamADMString) throws IOException {
-        byte[] b = (streamADMString + "\n").getBytes(); //StringUtil.getBytes(streamADMString + "\n")(streamADMString + "\n").getBytes();
+        byte[] b = (streamADMString + "\n").getBytes();
         if (outputBuffer.position() + b.length > outputBuffer.limit()) {
             flush();
             

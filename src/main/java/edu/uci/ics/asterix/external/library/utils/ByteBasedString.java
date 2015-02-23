@@ -2,30 +2,85 @@ package edu.uci.ics.asterix.external.library.utils;
 
 import java.nio.CharBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public class ByteBasedString implements CharSequence {
-    public static final String SPECIAL_CHARACTERS = "`~!#$%^*()_+[\\];',./{}|:\"<>?";
+public class ByteBasedString implements CharSequence {   
+    public int count=0;
     
     private byte[] value; 
     
     
-
-    public static String cleanUp(String s) {
-        final String specialChars2 = "[" + Pattern.quote(SPECIAL_CHARACTERS) + "]+";
-
-        s = s.replaceAll("(\\s)+", " ");
-        s = s.replaceAll("'s", "");
-        s = s.replaceAll(specialChars2, " ");
-        return s;
+    public ByteBasedString(CharSequence charSequence) {
+        this.value = getBytes(charSequence);
+        this.count = this.value.length;
     }
     
-    public static byte[] getBytes(String str) {
-        int length = str.length();
+    public ByteBasedString(int capacity) {
+        this.value = new byte[capacity];
+        this.count = capacity;
+    }
+
+    public ByteBasedString(String stringValue) {
+        this.value = getBytes(stringValue);
+        this.count = this.value.length;
+    }
+    
+    public ByteBasedString(char[] charArray) {
+        this.count = charArray.length;
+        this.value = new byte[count];
+        System.arraycopy(charArray, 0, value, 0, count);
+    }
+    
+    public void setValue(CharSequence charSequence) {
+        this.value = getBytes(charSequence);
+        this.count = this.value.length;
+    }
+    
+    void expandCapacity(int minimumCapacity) {
+        int newCapacity = value.length * 2 + 2;
+        if (newCapacity - minimumCapacity < 0)
+            newCapacity = minimumCapacity;
+        if (newCapacity < 0) {
+            if (minimumCapacity < 0) // overflow
+                throw new OutOfMemoryError();
+            newCapacity = Integer.MAX_VALUE;
+        }
+        value = Arrays.copyOf(value, newCapacity);
+    }
+    
+    public ByteBasedString append(byte b) {
+        expandCapacity(this.count + 1);
+        value[this.count] = b;
+        this.count++;
+        return this;
+
+    }
+    
+    public ByteBasedString append(byte b[]) {
+        int len = b.length;
+        int newLen = this.count + len; 
+        expandCapacity(newLen);
+        int j = count;
+        for (int i=0; i<len; i++) {
+            value[j] = b[i];
+            j++;
+        }
+        count += len;
+        return this;
+    }
+    
+    
+    public String toString() {
+        return new String(this.value);
+    }
+        
+    public static byte[] getBytes(CharSequence charSequence) {
+        int length = charSequence.length();
         char buffer[] = new char[length];
         
-        str.getChars(0, length, buffer, 0);
+        System.arraycopy(charSequence, 0, buffer, 0, length);
         byte b[] = new byte[length];
         for (int j = 0; j < length; j++) {
             b[j] = (byte) buffer[j];
@@ -73,6 +128,25 @@ public class ByteBasedString implements CharSequence {
         // character was not found
         return endIndex;
 
+    }
+    
+    public int lastIndexOf(int beginIndex, int endIndex, char character) {
+        int index = endIndex;
+        int fromIndex = beginIndex >= 0 ? beginIndex : 0;
+        for (; index > fromIndex; index--) {
+            char c = (char)value[index];
+            if (c == character)
+                return index;
+        }
+
+        // character was not found
+        return endIndex;
+
+    }
+    
+    
+    public int lastIndexOf(int endIndex, char character) {
+        return lastIndexOf(0, endIndex, character);
     }
 
     public static int lastIndexOf(String str, int endIndex, char character) {
@@ -132,20 +206,19 @@ public class ByteBasedString implements CharSequence {
 
     @Override
     public int length() {
-        // TODO Auto-generated method stub
-        return 0;
+        return this.count;
     }
 
     @Override
     public char charAt(int index) {
-        // TODO Auto-generated method stub
-        return 0;
+        return (char)this.value[index];
     }
 
     @Override
     public CharSequence subSequence(int start, int end) {
-        // TODO Auto-generated method stub
-        return null;
+        char buff[] = new char[end-start];
+        System.arraycopy(value, start, buff, 0, buff.length);
+        return new String(buff);
     }
 
 }
