@@ -2,8 +2,8 @@ package edu.uci.ics.asterix.external.library.utils;
 
 import java.io.File;
 import java.io.IOException;
-
-import org.apache.log4j.Logger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.cybozu.labs.langdetect.Detector;
 import com.cybozu.labs.langdetect.DetectorFactory;
@@ -21,7 +21,7 @@ import com.cybozu.labs.langdetect.LangDetectException;
 public class LanguageDetector {
 
 	private final String DEFAULT_LANG_PROFILE_DIR = "language_profiles";
-	private static final Logger log = Logger.getLogger(LanguageDetector.class);
+	private static final Logger LOGGER = Logger.getLogger(LanguageDetector.class.getName());
 
 	public LanguageDetector() {
 		try {
@@ -78,7 +78,7 @@ public class LanguageDetector {
 			// Returns true if the language detected is English (en)
 			en = lang.equalsIgnoreCase("en");
 		} catch (LangDetectException e) {
-			log.error("Error generated when trying to detect language for \"" + text + "\"");
+			LOGGER.log(Level.SEVERE, "Error generated when trying to detect language for \"" + text + "\"");
 			e.printStackTrace();
 		}
 		return en;

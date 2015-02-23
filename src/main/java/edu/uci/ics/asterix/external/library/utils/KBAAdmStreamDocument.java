@@ -177,6 +177,8 @@ public class KBAAdmStreamDocument {
             // anchor_cleansed: string
             adm.put(FIELD_ANCHOR, "");
         }
+        
+        si.clear();
 
     }
     

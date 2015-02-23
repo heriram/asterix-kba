@@ -18,11 +18,12 @@ public class KBAStreamDocumentWriter extends KBAStreamDocument {
         this.writer = writer;
         maxTupleSize = maxFramSize > ASTERIX_STRING_LENGTH_LIMIT ? maxFramSize : ASTERIX_STRING_LENGTH_LIMIT;
 
-        String text = fields.get(FIELD_BODY);
+        String bodyString = fields.get(FIELD_BODY);
 
-        if (text != null)
-            this.bodySize = text.getBytes().length;
-        else {
+        if (bodyString != null) {
+            byte b[] = StringUtil.getBytes(bodyString);
+            this.bodySize = b.length;
+        } else {
             bodySize = 0;
         }
 
@@ -58,7 +59,6 @@ public class KBAStreamDocumentWriter extends KBAStreamDocument {
         String parentId = fields.get(FIELD_DOCUMENT_ID);
         for (int i = 1; i < body_text_parts.length; i++) {
             KBAStreamDocument docPart = new KBAStreamDocument();
-            docPart = new KBAStreamDocument();
             writeDocumentPart(docPart, body_text_parts[i], i, parentId);
         }
         // Set current document body part (the parent document)

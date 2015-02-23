@@ -14,12 +14,13 @@ import org.trec.kba.streamcorpus.StreamItem;
 import edu.uci.ics.asterix.external.library.utils.ADM.ADMArray;
 import edu.uci.ics.asterix.external.library.utils.ADM.ADMObject;
 import edu.uci.ics.asterix.external.library.utils.ADM.ADMOrderedArray;
+import edu.uci.ics.asterix.external.udl.adapter.factory.KBAStreamItem;
 
 public class KBAStreamDocument {
 
     protected final static int ASTERIX_STRING_LENGTH_LIMIT = 32745; // See UTF8StringWriter.java
 
-    List<String> mentionedEntities = null;
+    protected List<String> mentionedEntities = null;
 
     protected HashMap<String, String> fields;
 
@@ -34,10 +35,19 @@ public class KBAStreamDocument {
     public final static String FIELD_LANGUAGE = "language";
 
     /**
-     * Field names
+     * Field names and types + positions
+     * doc_id: string,
+     * stream_id: string,
+     * title_cleansed: string,
+     * body_cleansed: string,
+     * source: string,
+     * dir_name: string,
+     * anchor_cleansed: string,
+     * language: string,
+     * schost: string
      */
-    protected static String[] fieldNames = { FIELD_DOCUMENT_ID, FIELD_STREAM_ID, FIELD_DIR_NAME, FIELD_SOURCE,
-            FIELD_SCHOST, FIELD_TITLE, FIELD_BODY, FIELD_ANCHOR, FIELD_LANGUAGE };
+    protected String[] fieldNames = { FIELD_DOCUMENT_ID, FIELD_STREAM_ID, FIELD_TITLE, FIELD_BODY, FIELD_SOURCE,
+            FIELD_DIR_NAME, FIELD_ANCHOR, FIELD_LANGUAGE, FIELD_SCHOST };
 
     public KBAStreamDocument() {
         this.fields = new HashMap<String, String>();
@@ -66,14 +76,85 @@ public class KBAStreamDocument {
         return "";
     }
 
-    protected void initialize(StreamItem si, String dirName) {
+    public int getNumBytes() {
+        int size = 0;
+        for (String fieldName : fieldNames) {
+            String s = fields.get(fieldName);
+            size += s.getBytes().length;
+        }
+
+        return size;
+    }
+    
+    public String[] getBodyText(int maxLen) {
+        return StringUtil.breakString(fields.get(FIELD_BODY), maxLen);
+    }
+    
+    
+/*    protected int initialize(KBAStreamItem si) {
+        // Size of the of other field than the bodytext
+        int size=0;
+        
         fields = new HashMap<String, String>();
-        //StringBuilder docId = new StringBuilder();
-        //docId.append(dirName).append("-").append(si.getStream_id());
-        fields.put(FIELD_DOCUMENT_ID, UUID.randomUUID().toString());
+        
+        String docid = si.getDoc_id();
+
+        
+        fields.put(FIELD_DOCUMENT_ID, docid);
+        size += StringUtil.sizeOfString(docid);
+        
+        String s = si.getStream_id();
+        fields.put(FIELD_STREAM_ID, s);
+        size += StringUtil.sizeOfString(s);
+
+        s = si.getDirName();
+        fields.put(FIELD_DIR_NAME, s);
+        size += StringUtil.sizeOfString(s);
+
+        s = si.getSource();
+        fields.put(FIELD_SOURCE, s);
+        size += StringUtil.sizeOfString(s);
+
+        s = si.getSchost();
+        fields.put(FIELD_SCHOST, s);
+        size += StringUtil.sizeOfString(s);
+        
+        fields.put(FIELD_BODY, si.getBodyText());
+        
+        s = si.getTitle();
+        fields.put(FIELD_TITLE, s);
+        size += StringUtil.sizeOfString(s);
+        
+        s = getLanguage(si.getBody());
+        fields.put(FIELD_LANGUAGE, s);
+        size += StringUtil.sizeOfString(s);
+
+        s = si.getAnchor();
+        fields.put(FIELD_ANCHOR, s);
+        size += StringUtil.sizeOfString(s);
+        
+        return size;
+    }*/
+
+    protected void initialize(StreamItem si, String dirName, boolean newDocId) {
+        fields = new HashMap<String, String>();
+        String docid = null;
+        if (newDocId) {
+            // Create an unique doc id
+            UUID uuid = UUID.randomUUID();
+            docid = uuid.toString();
+            
+        } else {
+            docid = si.getDoc_id();
+        }
+        
+        fields.put(FIELD_DOCUMENT_ID, docid);
         fields.put(FIELD_STREAM_ID, si.getStream_id());
+
         fields.put(FIELD_DIR_NAME, dirName);
+
         fields.put(FIELD_SOURCE, si.getSource());
+
         fields.put(FIELD_SCHOST, si.getSchost());
 
         ContentItem body = si.getBody();
@@ -89,8 +170,13 @@ public class KBAStreamDocument {
             fields.put(FIELD_ANCHOR, "");
         }
         
+        si.clear();
     }
-    
+
+    protected void initialize(StreamItem si, String dirName) {
+        initialize(si, dirName, true);
+    }
+
     protected void initialize(StreamItem si, String dirName, List<String> mentioned_entities) {
         initialize(si, dirName);
         // TODO Find a better way if value is null
@@ -134,7 +220,7 @@ public class KBAStreamDocument {
         return this.mentionedEntities;
     }
 
-    public static String getCleanVisible(ContentItem ci) {
+    public String getCleanVisible(ContentItem ci) {
         if (ci == null)
             return "";
         if (ci.getClean_visible() == null || ci.getClean_visible().length() == 0)

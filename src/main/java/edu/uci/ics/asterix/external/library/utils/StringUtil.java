@@ -1,20 +1,31 @@
 package edu.uci.ics.asterix.external.library.utils;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+
+import edu.uci.ics.asterix.om.base.AMutableString;
+import edu.uci.ics.asterix.om.base.IAObject;
+
 public class StringUtil {
-    public static final String SPECIAL_CHARACTERS = "`~!#$%^*()_+[\\];',./{}|:\"<>?";
+    public static final String SPECIAL_CHARACTERS = "`~!#$%^*()_+[\\];'/{}|:\"<>?"; // Keeping . and ,
 
     public static final char REPEATING_SPACES[] = { '\n', '\r', '\t', ' ' };
 
     public static final Set<Character> SPECIAL_CHAR_SET = toCharSet(SPECIAL_CHARACTERS);
 
     public static final Set<Character> REPEATING_SPACE_SET = toCharSet(REPEATING_SPACES);
-
+    
+    public static final String EMPTY_STRING="";
 
     public static Set<Character> toCharSet(char charArray[]) {
         Set<Character> charSet = new HashSet<Character>();
@@ -35,17 +46,17 @@ public class StringUtil {
         int len = s.length();
         char dstStrBuffer[] = new char[len];
         char srcStrBuffer[] = s.toCharArray();
- 
+
         int count = 0;
         for (int i = 0; i < len; i++) {
             char c = srcStrBuffer[i];
             switch (c) {
                 case '\'': // Remove "'s"
                     char next_c = srcStrBuffer[i + 1];
-                    if (next_c=='s') { 
+                    if (next_c == 's') {
                         i++;
-                    } else if (next_c=='t') { // keep 't forms for now
-                        dstStrBuffer[count] = c; 
+                    } else if (next_c == 't') { // keep 't forms for now
+                        dstStrBuffer[count] = c;
                         dstStrBuffer[++count] = next_c;
                         count++;
                         i++;
@@ -55,10 +66,10 @@ public class StringUtil {
                 case '\r':
                 case '\t':
                 case ' ':
-                    if (count>0 && REPEATING_SPACE_SET.contains(dstStrBuffer[count - 1]))
+                    if (count > 0 && REPEATING_SPACE_SET.contains(dstStrBuffer[count - 1]))
                         break;
                 default:
-                    if (!SPECIAL_CHAR_SET.contains(c)) {                        
+                    if (!SPECIAL_CHAR_SET.contains(c)) {
                         dstStrBuffer[count] = c;
                         count++;
                     }
@@ -68,15 +79,15 @@ public class StringUtil {
 
         return new String(dstStrBuffer, 0, count);
     }
-    
+
     /**
-     * Get the string bytes encoding 
+     * Get the string bytes encoding
      * 
      * @param str
      * @return
      */
     public static byte[] getBytes(String str) {
-        int length = str.length();
+        /*int length = str.length();
         char buffer[] = new char[length];
         
         str.getChars(0, length, buffer, 0);
@@ -84,18 +95,48 @@ public class StringUtil {
         for (int j = 0; j < length; j++) {
             b[j] = (byte) buffer[j];
         }
+        return b;*/
+
+        char[] buffer = str.toCharArray();
+        byte[] b = new byte[buffer.length << 1];
+        for (int i = 0; i < buffer.length; i++) {
+            int bpos = i << 1;
+            b[bpos] = (byte) ((buffer[i] & 0xFF00) >> 8);
+            b[bpos + 1] = (byte) (buffer[i] & 0x00FF);
+        }
         return b;
     }
-    
-    public static String concatenate(String strings[], char connector) {
-        int i=0;
-        StringBuilder sb = new StringBuilder(strings[i]);
+
+    public static int sizeOfString(String str) {
+        if (str == null || str.isEmpty())
+            return 0;
         
-        while(++i<strings.length) {
+        int size = 0;
+        int strlen = str.length();
+        char c;
+        int i = 0;
+
+        for (; i < strlen; i++) {
+            c = str.charAt(i);
+            if ((c >= 0x0001) && (c <= 0x007F)) {
+                size++;
+            } else if (c > 0x07FF) {
+                size += 3;
+            } else {
+                size += 2;
+            }
+        }
+        return size;
+    }
+
+    public static String concatenate(String strings[], char connector) {
+        int i = 0;
+        StringBuilder sb = new StringBuilder(strings[i]);
+        while (++i < strings.length) {
             sb.append(connector);
             sb.append(strings[i]);
         }
-        
+
         return sb.toString();
     }
 
@@ -146,26 +187,31 @@ public class StringUtil {
     }
 
     public static String[] breakString(String str, final int maxLen) {
+        List<String> subStrings = breakStringToList(str, maxLen);
+        return subStrings.toArray(new String[subStrings.size()]);
+    }
+
+    public static List<String> breakStringToList(String str, final int maxLen) {
         int len = str.length();
         List<String> subStrings = new ArrayList<String>();
 
-        if (len <= maxLen)
-            return new String[] { str };
-
-        int beginIndex = 0;
-        int endIndex = maxLen - 1;
-        while (endIndex < len) {
-            endIndex = Math.min(lastIndexOf(str, beginIndex, endIndex, ' '), len - 1);
-            subStrings.add(str.substring(beginIndex, endIndex));
-            beginIndex = endIndex + 1;
-            endIndex = beginIndex + maxLen - 2;
-
+        if (len <= maxLen) {
+            subStrings.add(str);
+        } else {
+            int beginIndex = 0;
+            int endIndex = maxLen - 1;
+            while (endIndex < len) {
+                endIndex = Math.min(lastIndexOf(str, beginIndex, endIndex, ' '), len - 1);
+                subStrings.add(str.substring(beginIndex, endIndex));
+                beginIndex = endIndex + 1;
+                endIndex = beginIndex + maxLen - 2;
+            }
+            subStrings.add(str.substring(beginIndex, len));
         }
 
-        subStrings.add(str.substring(beginIndex, len));
-
-        return subStrings.toArray(new String[subStrings.size()]);
+        return subStrings;
     }
+    
 
     public static String[] tokenize(String string, char delimiter) {
         ThreadLocal<String[]> tempArray = new ThreadLocal<String[]>();
@@ -194,6 +240,38 @@ public class StringUtil {
         String[] result = new String[wordCount];
         System.arraycopy(temp, 0, result, 0, wordCount);
         return result;
+    }
+
+    /**
+     * Analyze text using a specific Analyzer.
+     * Places the analysed text in an HashMap to keep track the positions.
+     * 
+     * @param analyzer
+     * @param text
+     * @return
+     * @throws Exception
+     */
+    public static void analyze(String text, Map<String, Set<Integer>> analyzed) throws Exception {
+        if (analyzed == null)
+            throw new Exception("Result \"Map\" was not initialized. Cannot be null.");
+
+        if (text.trim().isEmpty())
+            return;
+
+        Set<Integer> positions = null;
+        String tokens[] = tokenize(text, ' ');
+        int pos = 0;
+        for (String term : tokens) {
+            if (analyzed.containsKey(term))
+                positions = analyzed.get(term);
+            else
+                positions = new HashSet<Integer>();
+
+            positions.add(pos);
+            analyzed.put(term, positions);
+            pos++;
+        }
+
     }
 
 }
