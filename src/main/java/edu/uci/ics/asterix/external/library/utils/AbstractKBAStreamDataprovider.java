@@ -3,6 +3,7 @@ package edu.uci.ics.asterix.external.library.utils;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
@@ -16,54 +17,90 @@ import org.apache.thrift.transport.TTransportException;
 import org.trec.kba.streamcorpus.StreamItem;
 import org.tukaani.xz.XZInputStream;
 
-public abstract class AbstractKBAStreamDataprovider implements Runnable {
+public abstract class AbstractKBAStreamDataprovider<E> implements Runnable {
     protected static final int BUFFER_LENGTH = 8 * 1024;
-    protected LinkedBlockingQueue<String> inputQueue;
+    protected LinkedBlockingQueue<E> inputQueue;
     protected File[] dirDateHourDirs;
     protected static final Logger LOGGER = Logger.getLogger(AbstractKBAStreamDataprovider.class.getName());
-
-    public AbstractKBAStreamDataprovider(LinkedBlockingQueue<String> inputQ, String localDir) {
+    
+    protected static final boolean ADM_STRING = true;
+    protected static final boolean STREAM_ITEM = false;
+    private boolean isAdmString = ADM_STRING;
+    
+    protected boolean continueReading = true;
+    
+    public AbstractKBAStreamDataprovider(LinkedBlockingQueue<E> inputQ, String localDir) {
         this.inputQueue = inputQ;
         dirDateHourDirs = KBACorpusFiles.getDateHourDirs(localDir);
     }
 
-    private void readStremItem() throws TException, InterruptedException, IOException {
+    public static class KBAStreamItem extends StreamItem {
 
-        for (File datehourdir : dirDateHourDirs) {
+        private static final long serialVersionUID = 1L;
 
-            File xz_files[] = KBACorpusFiles.getXZFiles(datehourdir);
+        String dirName;
+        public KBAStreamItem(String dirName) {
+            super();
+            this.dirName = dirName;
+        }
+        
+        public String getDirName() {
+            return this.dirName;
+        }
+        
+    }
+    
+    public void setElementType(boolean isAdmString) {
+        this.isAdmString = isAdmString;
+    }
+    
+    public void readChunk(File file, String dirName) throws InterruptedException, TException, IOException {
+        FileInputStream fis = new FileInputStream(file);
+        BufferedInputStream bis = new BufferedInputStream(new XZInputStream(fis), BUFFER_LENGTH);
+        final TTransport transport = new TIOStreamTransport(bis);
+        final TBinaryProtocol protocol = new TBinaryProtocol(transport);
+        transport.open();
+        try {
+            while (true) {
+                final StreamItem item = new KBAStreamItem(dirName);
+                item.read(protocol);
+                if (isAdmString) {
+                    KBAStreamDocument kbadoc = new KBAStreamDocument(item, dirName);
+                    inputQueue.put((E) kbadoc.toAdmEquivalent());
+                } else 
+                    inputQueue.put((E) item);
+                
+                Thread.sleep(1);
+            }
+
+        } catch (TTransportException te) {
+            // Deal with the EOF exception bug
+            if (te.getType() == TTransportException.END_OF_FILE
+                    || te.getCause() instanceof java.io.EOFException) {
+                ; // Do nothing:-)
+            } else {
+                throw te;
+            }
+        }
+        transport.close();
+        fis.close();
+        
+    }
+    
+    private void readAllItems() throws TException, InterruptedException, IOException {
+        
+        for (int j=0; j<dirDateHourDirs.length; j++ ) {
+            File xz_files[] = KBACorpusFiles.getXZFiles(dirDateHourDirs[j]);
 
             if (LOGGER.isLoggable(Level.INFO)) {
-                LOGGER.info("Processing files in " + datehourdir.getName());
+                LOGGER.info("Processing files in " + dirDateHourDirs[j].getName());
             }
 
             // Reading the thrift-based (by default, xz-compressed) stream files
-            for (File file : xz_files) {
-                FileInputStream fis = new FileInputStream(file);
-                BufferedInputStream bis = new BufferedInputStream(new XZInputStream(fis), BUFFER_LENGTH);
-                final TTransport transport = new TIOStreamTransport(bis);
-                final TBinaryProtocol protocol = new TBinaryProtocol(transport);
-                transport.open();
-                try {
-                    while (true) {
-                        final StreamItem item = new StreamItem();
-                        item.read(protocol);
-                        KBAStreamDocument kbadoc = new KBAStreamDocument(item, datehourdir.getName());
-                        inputQueue.put(kbadoc.toAdmEquivalent());
-                        Thread.sleep(1);
-                    }
-
-                } catch (TTransportException te) {
-                    // Deal with the EOF exception bug
-                    if (te.getType() == TTransportException.END_OF_FILE
-                            || te.getCause() instanceof java.io.EOFException) {
-                        ; // Do nothing:-)
-                    } else {
-                        throw te;
-                    }
-                }
-                transport.close();
-                fis.close();
+            int i = 0;
+            for (; i<xz_files.length && continueReading; i++) {
+                File file = xz_files[i];
+                readChunk(file,dirDateHourDirs[j].getName());
             }
         }
     }
@@ -72,7 +109,7 @@ public abstract class AbstractKBAStreamDataprovider implements Runnable {
     public void run() {
         try {
 
-            readStremItem();
+            readAllItems();
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE,
                     "Fileloading/reading exception when trying to read the stream item. " + e.getMessage());
