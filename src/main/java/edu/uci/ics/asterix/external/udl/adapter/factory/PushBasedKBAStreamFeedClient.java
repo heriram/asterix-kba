@@ -56,31 +56,33 @@ import edu.uci.ics.hyracks.api.context.IHyracksTaskContext;
 public class PushBasedKBAStreamFeedClient extends FeedClient {
 
     private int batchSize = 0;
-    
+
     private static final int DEFAULT_BATCH_SIZE = 500;
 
     private ARecordType recordType;
     private KBAStreamItemProcessor streamItemProcessor;
-    private BlockingQueue<Map<String,Object>> dataInputQueue;
+    private BlockingQueue<Map<String, Object>> dataInputQueue;
+    private Map<String, String> configuration;
     private final KBAStreamServer streamDocServer;
     private ExecutorService executorService = Executors.newCachedThreadPool();
     private static String fieldNames[];
-   
-    
+    private static final String KEY_FILTER = "pre-filter-mentions";
 
-    public PushBasedKBAStreamFeedClient(IHyracksTaskContext ctx, ARecordType recordType, int partition,
+    public PushBasedKBAStreamFeedClient(IHyracksTaskContext ctx, ARecordType recordType,
             PushBasedKBAStreamAdapter adapter) throws AsterixException {
         this.recordType = recordType;
         this.streamItemProcessor = new KBAStreamItemProcessor(recordType, ctx);
         this.recordSerDe = new ARecordSerializerDeserializer(recordType);
         this.mutableRecord = streamItemProcessor.getMutableRecord();
         this.initialize(adapter.getConfiguration());
-        this.dataInputQueue = this.batchSize > 0 ? new ArrayBlockingQueue<Map<String,Object>>(batchSize)
-                : new ArrayBlockingQueue<Map<String,Object>>(DEFAULT_BATCH_SIZE);
-        streamDocServer = new KBAStreamServer(adapter.getConfiguration(), partition, recordType, ctx.getFrameSize(),
+        this.dataInputQueue = this.batchSize > 0 ? new ArrayBlockingQueue<Map<String, Object>>(batchSize)
+                : new ArrayBlockingQueue<Map<String, Object>>(DEFAULT_BATCH_SIZE);
+
+        String corpusDirectoryName = adapter.getDirectoryFromSplit();
+
+        this.configuration = adapter.getConfiguration();
+        streamDocServer = new KBAStreamServer(configuration, corpusDirectoryName, recordType, ctx.getFrameSize(),
                 dataInputQueue, executorService);
-        
-        
 
     }
 
@@ -96,7 +98,6 @@ public class PushBasedKBAStreamFeedClient extends FeedClient {
         try {
             this.streamDocServer.stop();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
@@ -106,21 +107,19 @@ public class PushBasedKBAStreamFeedClient extends FeedClient {
         private final ExecutorService executorService;
         private File[] dateHourDirectoryList;
 
-        public KBAStreamServer(Map<String, String> configuration, int partition, ARecordType outputtype, int frameSize,
-                BlockingQueue<Map<String,Object>> dataInputQueue, ExecutorService executorService) {
+        public KBAStreamServer(Map<String, String> configuration, String corpusDirectory, ARecordType outputtype,
+                int frameSize, BlockingQueue<Map<String, Object>> dataInputQueue, ExecutorService executorService) {
 
-            configureDateHourDirectories(configuration, partition);
+            dateHourDirectoryList = KBACorpusFiles.getDateHourDirs(corpusDirectory);
 
-            dataProvider = new DataProvider(dateHourDirectoryList, outputtype, frameSize, dataInputQueue);
+            boolean doPrefiltering = false;
+            if (configuration.containsKey(KEY_FILTER))
+                doPrefiltering = configuration.get(KEY_FILTER).equalsIgnoreCase("yes")
+                        || configuration.get(KEY_FILTER).equalsIgnoreCase("y");
+
+            dataProvider = new DataProvider(dateHourDirectoryList, doPrefiltering, outputtype, frameSize,
+                    dataInputQueue);
             this.executorService = executorService;
-        }
-
-        private void configureDateHourDirectories(Map<String, String> configuration, int partition) {
-            // TODO A better way to deal with different node needed
-            String corpusDir = configuration.get(AsterixTupleParserFactory.KEY_PATH).split(",")[partition];
-            //File dateHourDirs[] = KBACorpusFiles.getDateHourDirs(corpusDir);
-            dateHourDirectoryList = KBACorpusFiles.getDateHourDirs(corpusDir);
-            //this.dateHourDirectoryList = new LinkedBlockingQueue<File>(Arrays.asList(dateHourDirs));
         }
 
         public void stop() throws IOException {
@@ -135,22 +134,26 @@ public class PushBasedKBAStreamFeedClient extends FeedClient {
 
     private static class FileContentProvider {
         private int maxTupleSize = Integer.MAX_VALUE;
-        private BlockingQueue<Map<String,Object>> dataInputQueue;
+        private BlockingQueue<Map<String, Object>> dataInputQueue;
         private String[][] nameVariants = null;
         private ARecordType recordType;
         private TTransport transport;
         private TBinaryProtocol protocol;
 
-        public FileContentProvider(int frameSize, BlockingQueue<Map<String,Object>> dataInputQueue) {
+        private boolean doPrefiltering = false;
+
+        public FileContentProvider(int frameSize, BlockingQueue<Map<String, Object>> dataInputQueue) {
             this.maxTupleSize = (int) (0.80 * frameSize) / 2;
             this.dataInputQueue = dataInputQueue;
 
             nameVariants = KBATopicEntityLoader.loadNameVariants(KBARecord.ANALYZER);
         }
-        
-        public FileContentProvider(ARecordType recordType, int frameSize, BlockingQueue<Map<String,Object>> dataInputQueue) {
+
+        public FileContentProvider(ARecordType recordType, int frameSize, boolean doFiltering,
+                BlockingQueue<Map<String, Object>> dataInputQueue) {
             this.maxTupleSize = (int) (0.80 * frameSize) / 2;
             this.dataInputQueue = dataInputQueue;
+            doPrefiltering = doFiltering;
 
             nameVariants = KBATopicEntityLoader.loadNameVariants(KBARecord.ANALYZER);
             this.recordType = recordType;
@@ -167,14 +170,16 @@ public class PushBasedKBAStreamFeedClient extends FeedClient {
                     final StreamItem item = new StreamItem();
                     item.read(protocol);
                     final KBARecord kbaDoc = new KBARecord();
-                    
+
                     kbaDoc.setFieldValues(recordType, item, dirName);
                     fieldNames = kbaDoc.getFieldNames();
-                    
-                    if(kbaDoc.containMention(nameVariants, true))
-                            LOGGER.log(Level.INFO, "Found mentions in " + kbaDoc.getDoc_id() 
-                                    + " - {{" + kbaDoc.getMentionedEntity() +"}}.");
-                    
+
+                    if (doPrefiltering) {
+                        if (kbaDoc.containMention(nameVariants, true))
+                            LOGGER.log(Level.INFO,
+                                    "Found mentions in " + kbaDoc.getDoc_id() + " - {{" + kbaDoc.getMentionedEntity()
+                                            + "}}.");
+                    }
                     dataInputQueue.add(kbaDoc.getFields());
 
                 }
@@ -198,28 +203,25 @@ public class PushBasedKBAStreamFeedClient extends FeedClient {
     private static class DataProvider implements Runnable {
         private FileContentProvider contentProvider;
         private boolean continuePush = true;
-        private /*LinkedBlockingQueue<File>*/ File[] dateHourDirectoryList;
+        private File[] dateHourDirectoryList;
         int numFiles = 0;
         int numHours = 0;
 
-        public DataProvider(/*LinkedBlockingQueue<File>*/ File[] dateHourDirectoryList, ARecordType outputtype, int maxFrameSize,
-                BlockingQueue<Map<String,Object>> dataInputQueue) {
-            this.contentProvider = new FileContentProvider(outputtype, maxFrameSize, dataInputQueue);
+        public DataProvider(File[] dateHourDirectoryList, boolean doFiltering, ARecordType outputtype,
+                int maxFrameSize, BlockingQueue<Map<String, Object>> dataInputQueue) {
+            this.contentProvider = new FileContentProvider(outputtype, maxFrameSize, doFiltering, dataInputQueue);
             this.dateHourDirectoryList = dateHourDirectoryList;
-            //this.numHours = dateHourDirectoryList.size();
             this.numHours = this.dateHourDirectoryList.length;
         }
 
         @Override
         public void run() {
-            boolean moreData = true;
             LOGGER.log(Level.INFO, "Feed adapter created and loaded successfully. Now start ingesting data.");
             while (true) {
                 try {
                     int index = 0;
-                    while ((index<numHours) && continuePush) {
-                        File dateHourDir = dateHourDirectoryList[index]; //dateHourDirectoryList.take();
-                        //moreData = !dateHourDirectoryList.isEmpty();
+                    while ((index < numHours) && continuePush) {
+                        File dateHourDir = dateHourDirectoryList[index];
 
                         LOGGER.log(Level.INFO, "Reading chunks from " + dateHourDir);
 
