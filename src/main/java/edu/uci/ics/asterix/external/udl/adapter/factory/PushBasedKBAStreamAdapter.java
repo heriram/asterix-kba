@@ -9,6 +9,7 @@ import edu.uci.ics.asterix.external.dataset.adapter.IFeedClient;
 import edu.uci.ics.asterix.om.types.ARecordType;
 import edu.uci.ics.asterix.runtime.operators.file.AsterixTupleParserFactory;
 import edu.uci.ics.asterix.runtime.operators.file.CounterTimerTupleForwardPolicy;
+import edu.uci.ics.hyracks.api.comm.IFrameWriter;
 import edu.uci.ics.hyracks.api.context.IHyracksTaskContext;
 
 public class PushBasedKBAStreamAdapter extends ClientBasedFeedAdapter {
