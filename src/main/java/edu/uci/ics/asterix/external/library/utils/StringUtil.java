@@ -24,8 +24,8 @@ public class StringUtil {
     public static final Set<Character> SPECIAL_CHAR_SET = toCharSet(SPECIAL_CHARACTERS);
 
     public static final Set<Character> REPEATING_SPACE_SET = toCharSet(REPEATING_SPACES);
-    
-    public static final String EMPTY_STRING="";
+
+    public static final String EMPTY_STRING = "";
 
     public static Set<Character> toCharSet(char charArray[]) {
         Set<Character> charSet = new HashSet<Character>();
@@ -50,16 +50,19 @@ public class StringUtil {
         int count = 0;
         for (int i = 0; i < len; i++) {
             char c = srcStrBuffer[i];
+            char next_c = 0;
             switch (c) {
                 case '\'': // Remove "'s"
-                    char next_c = srcStrBuffer[i + 1];
-                    if (next_c == 's') {
-                        i++;
-                    } else if (next_c == 't') { // keep 't forms for now
-                        dstStrBuffer[count] = c;
-                        dstStrBuffer[++count] = next_c;
-                        count++;
-                        i++;
+                    if (i < (len - 1)) {
+                        next_c = srcStrBuffer[i + 1];
+                        if (next_c == 's') {
+                            i++;
+                        } else if (next_c == 't') { // keep 't forms for now
+                            dstStrBuffer[count] = c;
+                            dstStrBuffer[++count] = next_c;
+                            count++;
+                            i++;
+                        }
                     }
                     break;
                 case '\n':
@@ -110,7 +113,7 @@ public class StringUtil {
     public static int sizeOfString(String str) {
         if (str == null || str.isEmpty())
             return 0;
-        
+
         int size = 0;
         int strlen = str.length();
         char c;
@@ -211,7 +214,6 @@ public class StringUtil {
 
         return subStrings;
     }
-    
 
     public static String[] tokenize(String string, char delimiter) {
         ThreadLocal<String[]> tempArray = new ThreadLocal<String[]>();
