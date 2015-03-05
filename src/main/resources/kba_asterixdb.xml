@@ -3,16 +3,42 @@
 	<libraryFunctions>
 		<libraryFunction>
 			<function_type>SCALAR</function_type>
-			<name>FilteredStreamDoc</name>
-			<arguments>StreamDoc</arguments>
-			<return_type>FilteredStream</return_type>
-			<definition>edu.uci.ics.asterix.external.KBAStreamFilteringFunctionFactory</definition>
+			<name>hashTags</name>
+			<arguments>Tweet</arguments>
+			<return_type>ProcessedTweet</return_type>
+			<definition>edu.uci.ics.asterix.external.library.HashTagsFunctionFactory
+			</definition>
+		</libraryFunction>
+		<libraryFunction>
+			<function_type>SCALAR</function_type>
+			<name>streamDocFilter</name>
+			<arguments>InputRecordType</arguments>
+			<return_type>StreamType</return_type>
+			<definition>edu.uci.ics.asterix.external.library.KBAStreamFilteringFunctionFactory</definition>
+		</libraryFunction>
+		<libraryFunction>
+			<function_type>SCALAR</function_type>
+			<name>mainDocLoader</name>
+			<arguments>InputRecordType</arguments>
+			<return_type>StreamType</return_type>
+			<definition>edu.uci.ics.asterix.external.library.KBAStreamMainDocsFunctionFactory</definition>
+		</libraryFunction>
+		<libraryFunction>
+			<function_type>SCALAR</function_type>
+			<name>childDocLoader</name>
+			<arguments>InputRecordType</arguments>
+			<return_type>ChildStreamType</return_type>
+			<definition>edu.uci.ics.asterix.external.library.KBAChildDocFunctionFactory</definition>
 		</libraryFunction>
 	</libraryFunctions>
 	<libraryAdapters>
 		<libraryAdapter>
 			<name>kba_stream_feeder</name>
-			<factory_class>edu.uci.ics.asterix.external.library.adaptor.KBAStreamGeneratorAdapterFactory</factory_class>
+			<factory_class>edu.uci.ics.asterix.external.dataset.adapter.KBAStreamGeneratorAdapterFactory</factory_class>
+		</libraryAdapter>
+		<libraryAdapter>
+			<name>push_kba_stream_feed</name>
+			<factory_class>edu.uci.ics.asterix.external.udl.adapter.factory.PushBasedKBAStreamAdapterFactory</factory_class>
 		</libraryAdapter>
 	</libraryAdapters>
 </externalLibrary>
