@@ -4,7 +4,13 @@ import edu.uci.ics.asterix.external.library.utils.StringUtil;
 
 public class Tokenizer extends AbstractTokenizer implements ITokenizer {
     
-    public String[] tokenize(char textCharArray[]) {
+    public static final Tokenizer INSTANCE = new Tokenizer();
+    
+    private Tokenizer() {
+        
+    }
+    
+    public String[] tokenize(char textCharArray[], boolean removeStopWord) {
         int len = textCharArray.length;
         String[] temp = new String[(len / 2) + 2];
         int wordCount = 0;
@@ -65,20 +71,21 @@ public class Tokenizer extends AbstractTokenizer implements ITokenizer {
         }
         String result[] = new String[wordCount];
         System.arraycopy(temp, 0, result, 0, wordCount);
+        
+        if (removeStopWord)
+            result = removeStopWord(result);
 
         return result;
     }
 
     @Override
-    public String[] tokenize(String text) {
-        return tokenize(text.trim().toCharArray());
+    public String[] tokenize(String text, boolean removeStopWord) {
+        return tokenize(text.trim().toCharArray(), removeStopWord);
     }
 
     @Override
-    public String[] tokenize(String text, boolean removeStopWord) {
-        String tokens[] = tokenize(text);
-        if (removeStopWord)
-            tokens = removeStopWord(tokens);
+    public String[] tokenize(String text) {
+        String tokens[] = tokenize(text, true);
         return tokens;
     }
 
@@ -476,10 +483,6 @@ public class Tokenizer extends AbstractTokenizer implements ITokenizer {
                 "Physics 1004 118 2010.7 ";
         String tokens[] = lexer.tokenize(text);        
         System.out.println(StringUtil.concatenate(tokens, '|'));
-    }
-
-    public char toDigit(int n) {
-        return (char) ('0' + n);
     }
 
 }

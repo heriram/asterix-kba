@@ -4,7 +4,7 @@ public class TextAnalyzer  {
     private Tokenizer tokenizer;
     
     public TextAnalyzer() {
-        this.tokenizer = new Tokenizer();
+        this.tokenizer = Tokenizer.INSTANCE;
     }
     
     ITokenizer getTokenizer() {
@@ -12,7 +12,7 @@ public class TextAnalyzer  {
     }
     
     public String[] analyze(String text) {
-        return tokenizer.removeStopWord(tokenizer.tokenize(text.trim().toCharArray()));
+        return tokenizer.tokenize(text);
     }
 
 }

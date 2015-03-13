@@ -39,7 +39,23 @@ public abstract class AbstractTokenizer implements ITokenizer {
         ENGLISH_STOP_WORDS_SET = Collections.unmodifiableSet(stopSet);
     }
 
-
+    public static boolean isLetterOrDigit(char ch) {
+        return (ch >= toDigit(0) && ch <= toDigit(9)) || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')
+                || (ch >= 0x00C0 && ch <= 0x00F6) || (ch >= 0x00F8 && ch <= 0x02AF);
+    }
+    public static char toDigit(int n) {
+        return (char) ('0' + n);
+    }
+    
+    
+    
+    public boolean isLetter(char c) {
+        return (c >= 'A' && c <= 'Z') || 
+                (c >= 'a' && c <= 'z')
+                || (c >= 0x00C0 && c <= 0x00F6) || 
+                (c >= 0x00F8 && c <= 0x02AF);
+    }
+    
     public String[] removeStopWord(String tokens[]) {
         String tmp[] = new String[tokens.length];
         int count=0;
