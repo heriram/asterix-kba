@@ -3,11 +3,24 @@
 	<libraryFunctions>
 		<libraryFunction>
 			<function_type>SCALAR</function_type>
+			<name>documentEntityFeature</name>
+			<arguments>InputRecordType</arguments>
+			<return_type>DocumentEntityFeatureType</return_type>
+			<definition>edu.uci.ics.asterix.external.library.DocuementEntityFeatureExtractionFunctionFactory</definition>
+		</libraryFunction>
+		<libraryFunction>
+			<function_type>SCALAR</function_type>
+			<name>documentFeature</name>
+			<arguments>InputRecordType</arguments>
+			<return_type>DocumentFeatureType</return_type>
+			<definition>edu.uci.ics.asterix.external.library.DocumentFeatureExtractionFunctionFactory</definition>
+		</libraryFunction>
+		<libraryFunction>
+			<function_type>SCALAR</function_type>
 			<name>hashTags</name>
 			<arguments>Tweet</arguments>
 			<return_type>ProcessedTweet</return_type>
-			<definition>edu.uci.ics.asterix.external.library.HashTagsFunctionFactory
-			</definition>
+			<definition>edu.uci.ics.asterix.external.library.HashTagsFunctionFactory</definition>
 		</libraryFunction>
 		<libraryFunction>
 			<function_type>SCALAR</function_type>
