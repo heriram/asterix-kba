@@ -22,6 +22,9 @@ public class Tokenizer extends AbstractTokenizer implements ITokenizer {
             c = Character.toLowerCase(c);
             switch (c) {
                 case '\'': // Remove "'s"
+                    if (i==(len-1))
+                        break;
+                    
                     char next_c =  textCharArray[i+1];
                     if (next_c == 's') {
                         i++;

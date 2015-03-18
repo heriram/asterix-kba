@@ -33,7 +33,7 @@ public abstract class AbstractTokenizer implements ITokenizer {
                 "very", "was", "wasn't", "we", "we'd", "we'll", "we're", "we've", "were", "weren't", "what", "what's",
                 "when", "when's", "where", "where's", "which", "while", "who", "who's", "whom", "why", "why's", "with",
                 "won't", "would", "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours",
-                "yourself", "yourselves");
+                "yourself", "yourselves", "--", "_", "-");
         final Set<String> stopSet = new HashSet<>(stopWords.size());
         stopSet.addAll(stopWords);
         ENGLISH_STOP_WORDS_SET = Collections.unmodifiableSet(stopSet);
