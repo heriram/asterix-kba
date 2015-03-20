@@ -1,6 +1,7 @@
 package edu.uci.ics.asterix.external.library.utils;
 
 import java.nio.CharBuffer;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -109,7 +110,7 @@ public class StringUtil {
 
         }
 
-        return new String(dstStrBuffer, 0, count);
+        return (new String(dstStrBuffer, 0, count)).trim();
     }
 
     public static String removeSpecialChars(String s) {
@@ -161,16 +162,6 @@ public class StringUtil {
      * @return
      */
     public static byte[] getBytes(String str) {
-        /*int length = str.length();
-        char buffer[] = new char[length];
-
-        str.getChars(0, length, buffer, 0);
-        byte b[] = new byte[length];
-        for (int j = 0; j < length; j++) {
-            b[j] = (byte) buffer[j];
-        }
-        return b;*/
-
         char[] buffer = str.toCharArray();
         byte[] b = new byte[buffer.length << 1];
         for (int i = 0; i < buffer.length; i++) {
@@ -279,6 +270,137 @@ public class StringUtil {
         return lastIndexOf(str, 0, endIndex, character);
     }
 
+    public static class SplittedText {
+        String[] splits;
+        int[] tokenOffsets;
+        int[] splitLengths;
+
+        public SplittedText(int capacity) {
+            splits = new String[capacity];
+            tokenOffsets = new int[capacity];
+            splitLengths = new int[capacity];
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder("[");
+            for (int count = 0; count < splits.length; count++) {
+                sb.append(tokenOffsets[count] + "::");
+                sb.append(splits[count]);
+                sb.append("|" + splitLengths[count]);
+                if (count < splits.length - 1)
+                    sb.append(", ");
+            }
+            sb.append(']');
+
+            return sb.toString();
+        }
+    }
+
+    public static String toString(StringBuilder sb, int length) {
+        char buffer[] = new char[length];
+        sb.getChars(0, length, buffer, 0);
+        return new String(buffer);
+    }
+
+    /**
+     * Wraping pre-tokenized text into an array of strings of length
+     * 
+     * <pre>
+     * maxLen
+     * </pre>
+     * 
+     * @param tokens
+     * @param maxLen
+     * @return
+     */
+    public static SplittedText splitText(String tokens[], int maxLen) {
+
+        int tempLength = (tokens.length / 2) + 2;
+        String tempBuffer[] = new String[tempLength];
+        int tempOffsets[] = new int[tempLength];
+        int splitLength[] = new int[tempLength];
+        int count = 0;
+
+        StringBuilder sb = new StringBuilder();
+        tempOffsets[0] = 0;
+        int i = 0;
+        for (; i < tokens.length; i++) {
+            int len = tokens[i].length();
+            if ((sb.length() + len) <= maxLen) {
+                sb.append(tokens[i] + " ");
+            } else {
+                tempBuffer[count] = toString(sb, sb.length() - 1);
+                splitLength[count] = i / (count + 1);
+                count++;
+                sb.setLength(0);
+                sb.append(tokens[i] + " ");
+                tempOffsets[count] = i;
+
+            }
+        }
+
+        SplittedText st = new SplittedText(count + 1);
+        System.arraycopy(splitLength, 0, st.splitLengths, 0, count);
+        st.splitLengths[count] = i / (count + 2);
+
+        System.arraycopy(tempOffsets, 0, st.tokenOffsets, 0, count);
+        st.tokenOffsets[count] = i;
+
+        System.arraycopy(tempBuffer, 0, st.splits, 0, count);
+        st.splits[count] = toString(sb, sb.length() - 1);
+
+        return st;
+    }
+
+    /**
+     * Wraping pre-tokenized text into an array of strings of length
+     * 
+     * <pre>
+     * maxLen
+     * </pre>
+     * 
+     * @param tokens
+     * @param maxLen
+     * @return
+     */
+    public static String[] breakString(String tokens[], int maxLen) {
+        int tempLength = (tokens.length / 2) + 2;
+        String tempBuffer[] = new String[tempLength];
+        int count = 0;
+
+        StringBuilder sb = new StringBuilder();
+        for (String token : tokens) {
+            int len = token.length();
+            if ((sb.length() + len) <= maxLen) {
+                sb.append(token + " ");
+            } else {
+                tempBuffer[count] = sb.toString();
+                count++;
+                sb.setLength(0);
+                sb.append(token + " ");
+            }
+        }
+
+        String result[] = new String[count + 1];
+        System.arraycopy(tempBuffer, 0, result, 0, count);
+
+        result[count] = sb.toString();
+
+        return result;
+    }
+
+    /**
+     * Wraping a string into an array of strings of length
+     * 
+     * <pre>
+     * maxLen
+     * </pre>
+     * 
+     * @param str
+     * @param maxLen
+     * @return
+     */
     public static String[] breakString(String str, final int maxLen) {
 
         String subStrings[];
@@ -348,69 +470,77 @@ public class StringUtil {
         return new String(asciiBuff).trim();
     }
 
-    public static String[] tokenize(String string, char delimiter) {
-        ThreadLocal<String[]> tempArray = new ThreadLocal<String[]>();
-        String[] temp = tempArray.get();
-        int tempLength = (string.length() / 2) + 2;
-
-        if (temp == null || temp.length < tempLength) {
-            temp = new String[tempLength];
-            tempArray.set(temp);
-        }
-
+    public static String[] tokenize(String text, String delimiters) {
+        Set<Character> del = new HashSet<>();
+        for (char c: delimiters.toCharArray())
+            del.add(c);
+        
+        int len = text.length();
+        String[] temp = new String[len];
         int wordCount = 0;
-        int i = 0;
-        int j = string.indexOf(delimiter);
 
-        while (j >= 0) {
-            String word = string.substring(i, j).trim();
-            if (!word.isEmpty()) {
-                temp[wordCount++] = word;
+        char wordBuff[] = new char[temp.length];
+        int index = 0;
+
+        for (int i = 0; i < len; i++) {
+            char c = text.charAt(i);
+            if (del.contains(c)) {
+                if (index > 0) {
+                    String word = new String(wordBuff, 0, index);
+                    index = 0;
+                    temp[wordCount] = word;
+                    wordCount++;
+
+                }
+            } else {
+                wordBuff[index] = c;
+                index++;
             }
-            i = j + 1;
-            j = string.indexOf(delimiter, i);
+
         }
-
-        temp[wordCount++] = string.substring(i);
-
-        String[] result = new String[wordCount];
+        
+        temp[wordCount] = new String(wordBuff, 0, index).intern();
+        wordCount++;
+        String result[] = new String[wordCount];
         System.arraycopy(temp, 0, result, 0, wordCount);
+        
+        del = null;
+        
         return result;
     }
 
-    /**
-     * Analyze text using a specific Analyzer.
-     * Places the analysed text in an HashMap to keep track the positions.
-     *
-     * @param analyzer
-     * @param text
-     * @return
-     * @throws Exception
-     */
-    public static void analyze(String text, Map<String, Set<Integer>> analyzed) throws Exception {
-        if (analyzed == null) {
-            throw new Exception("Result \"Map\" was not initialized. Cannot be null.");
-        }
+    
+    public static String[] tokenize(String text, char delimiter) {
+        int len = text.length();
+        String[] temp = new String[len];
+        int wordCount = 0;
 
-        if (text.trim().isEmpty()) {
-            return;
-        }
+        char wordBuff[] = new char[temp.length];
+        int index = 0;
 
-        Set<Integer> positions = null;
-        String tokens[] = tokenize(text, ' ');
-        int pos = 0;
-        for (String term : tokens) {
-            if (analyzed.containsKey(term)) {
-                positions = analyzed.get(term);
+        for (int i = 0; i < len; i++) {
+            char c = text.charAt(i);
+            if (c == delimiter) {
+                if (index > 0) {
+                    String word = new String(wordBuff, 0, index);
+                    index = 0;
+                    temp[wordCount] = word;
+                    wordCount++;
+
+                }
             } else {
-                positions = new HashSet<Integer>();
+                wordBuff[index] = c;
+                index++;
             }
 
-            positions.add(pos);
-            analyzed.put(term, positions);
-            pos++;
         }
 
+        temp[wordCount] = new String(wordBuff, 0, index).intern();
+        wordCount++;
+        String result[] = new String[wordCount];
+        System.arraycopy(temp, 0, result, 0, wordCount);
+
+        return result;
     }
 
 }

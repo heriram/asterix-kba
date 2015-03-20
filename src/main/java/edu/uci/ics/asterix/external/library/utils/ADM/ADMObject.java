@@ -19,6 +19,8 @@ import java.util.Map.Entry;
 import java.util.ResourceBundle;
 import java.util.Set;
 
+import edu.uci.ics.asterix.om.base.AMutableRecord;
+
 /**
  * A ADMObject is an unordered collection of name/value pairs. Its external
  * form is a string wrapped in curly braces with colons between the names and
@@ -55,7 +57,7 @@ import java.util.Set;
  */
 public class ADMObject {
     public static final Character[] WHITE_SPACES = new Character[] { '\b', '\f', '\t', '\n', '\r', ' ' };
-    public static Set<Character> whiteSpaceCharSet;
+    public Set<Character> whiteSpaceCharSet;
 
     /**
      * ADMObject.NULL is equivalent to the value that JavaScript calls null,
@@ -1443,7 +1445,8 @@ public class ADMObject {
         try {
             return this.toString(0);
         } catch (Exception e) {
-            return null;
+            System.err.println("SEVERE: Error found when trying to generate an ADM string.");
+            return "";
         }
     }
 
@@ -1492,7 +1495,7 @@ public class ADMObject {
      *             If the value is or contains an invalid number.
      */
     public static String valueToString(Object value) throws ADMException {
-        if (value == null || value.equals(null)) {
+        if (value == null || value.equals(NULL)) {
             return "null";
         }
         if (value instanceof ADMString) {
@@ -1587,7 +1590,7 @@ public class ADMObject {
 
     static final Writer writeValue(Writer writer, Object value, int indentFactor, int indent) throws ADMException,
             IOException {
-        if (value == null || value.equals(null)) {
+        if (value == null || value.equals(NULL)) {
             writer.write("null");
         } else if (value instanceof ADMObject) {
             ((ADMObject) value).write(writer, indentFactor, indent);
@@ -1679,4 +1682,5 @@ public class ADMObject {
             throw new ADMException(exception);
         }
     }
+   
 }

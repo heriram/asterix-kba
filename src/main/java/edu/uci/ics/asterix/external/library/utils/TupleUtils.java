@@ -51,10 +51,11 @@ public class TupleUtils extends StringUtil {
         tupleMap.entrySet();
         Iterator<Entry<String, Object>> it = tupleMap.entrySet().iterator();
 
-        TupleInfo tupleInfo = new TupleInfo();
-        tupleInfo.numberOfSplits = 1;
-        tupleInfo.totalSize = 0;
-        tupleInfo.sizeOtherFields = 0;
+        TupleInfo ti = new TupleInfo();
+        ti.id = (String) tupleMap.get(KBARecord.FIELD_DOCUMENT_ID);
+        ti.numberOfSplits = 1;
+        ti.totalSize = 0;
+        ti.sizeOtherFields = 0;
 
         while (it.hasNext()) {
             Entry<String, Object> e = it.next();
@@ -72,15 +73,15 @@ public class TupleUtils extends StringUtil {
             }
 
             if (e.getKey().equals(KBARecord.FIELD_BODY)) {
-                tupleInfo.bodySize = s;
+                ti.bodySize = s;
             } else
-                tupleInfo.sizeOtherFields += s;
+                ti.sizeOtherFields += s;
 
-            tupleInfo.totalSize += s;
+            ti.totalSize += s;
         }
-        tupleInfo.numberOfSplits = (int) Math.ceil(tupleInfo.totalSize / (double) maxTupleSize);
+        ti.numberOfSplits = (int) Math.ceil(ti.totalSize / (double) maxTupleSize);
 
-        return tupleInfo;
+        return ti;
     }
 
     public static Object splitTuple(Map<String, Object> fields, int maxSize) {
@@ -91,12 +92,12 @@ public class TupleUtils extends StringUtil {
 
         return splitTuple(fields, tupleSize, maxSize);
     }
-    
+
     public static int getFieldPosByName(JRecord jRecord, String fieldName) {
         ARecordType recordType = jRecord.getRecordType();
         return getFieldPosByName(recordType.getFieldNames(), fieldName);
     }
-    
+
     public static int getFieldPosByName(String[] fieldNames, String fieldName) {
         int index = 0;
         for (String name : fieldNames) {
@@ -107,7 +108,6 @@ public class TupleUtils extends StringUtil {
         }
         return -1;
     }
-    
 
     /**
      * Split a tuple (represented by the tupleMap) into smaller tuples to fit in the
@@ -123,18 +123,24 @@ public class TupleUtils extends StringUtil {
      *         Array of Maps containing the children tuples.
      */
     public static Map<String, Object>[] splitTuple(Map<String, Object> fields, int tupleSize, int maxSize) {
+        // Get the min number of splits
         int numSplits = (int) Math.ceil(tupleSize / (double) maxSize);
+        
+        String parentId = (String) fields.get(KBARecord.FIELD_DOCUMENT_ID);
 
         // Split the body content into numSplits number of parts
         String bodyText = (String) fields.get(KBARecord.FIELD_BODY);
-        int contentSplitSize = (int) Math.ceil(sizeOfString(bodyText) / (double) numSplits);
+    
+        // Get max size of the body text in each split
+        int contentSplitSize = (int) Math.ceil(bodyText.length() / (double) numSplits);
+        
         String bodyTextSplits[] = breakString(bodyText, contentSplitSize);
-
+        numSplits = bodyTextSplits.length;
+        
         // Get smaller tuple splits
         @SuppressWarnings("unchecked")
         Map<String, Object> fieldsSplits[] = new Map[numSplits];
-        String parentId = (String) fields.get(KBARecord.FIELD_DOCUMENT_ID);
-        
+
         // Setup child-specific fields
         for (int part = 1; part < numSplits; part++) {
             fieldsSplits[part] = new HashMap<String, Object>();
@@ -142,6 +148,7 @@ public class TupleUtils extends StringUtil {
             fieldsSplits[part].put(KBARecord.FIELD_DOCUMENT_ID, docId);
             fieldsSplits[part].put(KBARecord.FIELD_PARENT, parentId);
             fieldsSplits[part].put(KBARecord.FIELD_BODY, bodyTextSplits[part]);
+            fieldsSplits[part].put(KBARecord.FIELD_PART, part);
         }
 
         fields.put(KBARecord.FIELD_BODY, bodyTextSplits[0]);

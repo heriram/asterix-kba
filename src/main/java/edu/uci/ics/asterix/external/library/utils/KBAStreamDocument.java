@@ -2,9 +2,9 @@ package edu.uci.ics.asterix.external.library.utils;
 
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 
 import org.trec.kba.streamcorpus.ContentItem;
@@ -14,13 +14,12 @@ import org.trec.kba.streamcorpus.StreamItem;
 import edu.uci.ics.asterix.external.library.utils.ADM.ADMArray;
 import edu.uci.ics.asterix.external.library.utils.ADM.ADMObject;
 import edu.uci.ics.asterix.external.library.utils.ADM.ADMOrderedArray;
-import edu.uci.ics.asterix.external.udl.adapter.factory.KBAStreamItem;
 
 public class KBAStreamDocument {
 
     protected final static int ASTERIX_STRING_LENGTH_LIMIT = 32745; // See UTF8StringWriter.java
 
-    protected List<String> mentionedEntities = null;
+    protected Set<String> mentionedEntities = null;
 
     protected HashMap<String, String> fields;
 
@@ -57,7 +56,7 @@ public class KBAStreamDocument {
         initialize(si, dirName);
     }
 
-    public KBAStreamDocument(StreamItem si, String dirName, List<String> mentioned_entities) {
+    public KBAStreamDocument(StreamItem si, String dirName, Set<String> mentioned_entities) {
         initialize(si, dirName, mentioned_entities);
     }
 
@@ -90,52 +89,6 @@ public class KBAStreamDocument {
         return StringUtil.breakString(fields.get(FIELD_BODY), maxLen);
     }
     
-    
-/*    protected int initialize(KBAStreamItem si) {
-        // Size of the of other field than the bodytext
-        int size=0;
-        
-        fields = new HashMap<String, String>();
-        
-        String docid = si.getDoc_id();
-
-        
-        fields.put(FIELD_DOCUMENT_ID, docid);
-        size += StringUtil.sizeOfString(docid);
-        
-        String s = si.getStream_id();
-        fields.put(FIELD_STREAM_ID, s);
-        size += StringUtil.sizeOfString(s);
-
-        s = si.getDirName();
-        fields.put(FIELD_DIR_NAME, s);
-        size += StringUtil.sizeOfString(s);
-
-        s = si.getSource();
-        fields.put(FIELD_SOURCE, s);
-        size += StringUtil.sizeOfString(s);
-
-        s = si.getSchost();
-        fields.put(FIELD_SCHOST, s);
-        size += StringUtil.sizeOfString(s);
-        
-        fields.put(FIELD_BODY, si.getBodyText());
-        
-        s = si.getTitle();
-        fields.put(FIELD_TITLE, s);
-        size += StringUtil.sizeOfString(s);
-        
-        s = getLanguage(si.getBody());
-        fields.put(FIELD_LANGUAGE, s);
-        size += StringUtil.sizeOfString(s);
-
-        s = si.getAnchor();
-        fields.put(FIELD_ANCHOR, s);
-        size += StringUtil.sizeOfString(s);
-        
-        return size;
-    }*/
-
     protected void initialize(StreamItem si, String dirName, boolean newDocId) {
         fields = new HashMap<String, String>();
         String docid = null;
@@ -177,7 +130,7 @@ public class KBAStreamDocument {
         initialize(si, dirName, true);
     }
 
-    protected void initialize(StreamItem si, String dirName, List<String> mentioned_entities) {
+    protected void initialize(StreamItem si, String dirName, Set<String> mentioned_entities) {
         initialize(si, dirName);
         // TODO Find a better way if value is null
         this.mentionedEntities = mentioned_entities;
@@ -212,11 +165,11 @@ public class KBAStreamDocument {
         return date_hour.substring(0, (date_hour.lastIndexOf('-')));
     }
 
-    public void setMentionedEntity(List<String> entity_list) {
+    public void setMentionedEntity(Set<String> entity_list) {
         this.mentionedEntities = entity_list;
     }
 
-    public List<String> getMentionedEntity() {
+    public Set<String> getMentionedEntity() {
         return this.mentionedEntities;
     }
 

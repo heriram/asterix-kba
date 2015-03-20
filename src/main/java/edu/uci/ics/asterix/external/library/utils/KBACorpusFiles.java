@@ -138,25 +138,39 @@ public class KBACorpusFiles {
     public static File[] getFiles(File dhd, final String ext) {
         File[] files = null;
 
-        // log.info(dhd.getAbsoluteFile());
-
         if (dhd.isDirectory()) {
-            files = dhd.listFiles(new FileFilter() {
-                @Override
-                public boolean accept(File file) {
-                    String name = file.getName();
-                    if (name.startsWith("."))
-                        return false;
-                    
-                    if (name.endsWith(ext))
-                        return true;
-                    
-                    return false;
-                }
-            });
+            files = dhd.listFiles(new CorpusFileFilter(ext));
         }
         return files;
     }
+    
+    public static class CorpusFileFilter implements FileFilter {
+        private String extension;
+        
+        public static final CorpusFileFilter GPG_FILTER = new CorpusFileFilter(".gpg");
+        public static final CorpusFileFilter XZ_FILTER = new CorpusFileFilter(".xz");
+        public static final CorpusFileFilter SC_FILTER = new CorpusFileFilter(".sc");
+        public static final CorpusFileFilter ADM_FILTER = new CorpusFileFilter(".adm");
+        public static final CorpusFileFilter JSON_FILTER = new CorpusFileFilter(".json");
+        
+        public CorpusFileFilter(String ext) {
+            this.extension = ext;
+        }
+
+        @Override
+        public boolean accept(File pathname) {
+            String name = pathname.getName();
+            if (name.startsWith("."))
+                return false;
+            
+            if (name.endsWith(extension))
+                return true;
+            
+            return false;
+        }
+        
+    }
+    
 
     public static File[] getFiles(String dh_dir, String ext) {
         return getFiles(new File(dh_dir), ext);
