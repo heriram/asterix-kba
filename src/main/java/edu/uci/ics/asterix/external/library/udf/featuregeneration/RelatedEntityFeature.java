@@ -1,10 +1,8 @@
 package edu.uci.ics.asterix.external.library.udf.featuregeneration;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import edu.uci.ics.asterix.common.exceptions.AsterixException;
 import edu.uci.ics.asterix.external.library.IFunctionHelper;
