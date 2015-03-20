@@ -14,7 +14,6 @@ public abstract class AbstractTokenizer implements ITokenizer {
     protected final char SPACE_CHARS[] = " \n\t\r".toCharArray();
     protected final char SPECIAL_CHARS[] = "-_@".toCharArray();
     
-    
     public static final Set<?> ENGLISH_STOP_WORDS_SET;
 
     static {
