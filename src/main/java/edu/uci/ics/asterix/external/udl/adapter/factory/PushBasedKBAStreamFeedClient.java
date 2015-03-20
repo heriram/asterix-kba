@@ -19,7 +19,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -43,8 +46,11 @@ import edu.uci.ics.asterix.common.exceptions.AsterixException;
 import edu.uci.ics.asterix.dataflow.data.nontagged.serde.ARecordSerializerDeserializer;
 import edu.uci.ics.asterix.external.dataset.adapter.FeedClient;
 import edu.uci.ics.asterix.external.library.KBATopicEntityLoader;
+import edu.uci.ics.asterix.external.library.PhraseFinder;
 import edu.uci.ics.asterix.external.library.utils.KBACorpusFiles;
+import edu.uci.ics.asterix.external.library.utils.LanguageDetector;
 import edu.uci.ics.asterix.external.library.utils.TextAnalysis;
+import edu.uci.ics.asterix.external.library.utils.TupleUtils;
 import edu.uci.ics.asterix.om.types.ARecordType;
 import edu.uci.ics.asterix.runtime.operators.file.AsterixTupleParserFactory;
 import edu.uci.ics.asterix.runtime.operators.file.CounterTimerTupleForwardPolicy;
@@ -62,25 +68,41 @@ public class PushBasedKBAStreamFeedClient extends FeedClient {
     private ARecordType recordType;
     private KBAStreamItemProcessor streamItemProcessor;
     private BlockingQueue<Map<String, Object>> dataInputQueue;
-    private Map<String, String> configuration;
     private final KBAStreamServer streamDocServer;
     private ExecutorService executorService = Executors.newCachedThreadPool();
     private static String fieldNames[];
     private static final String KEY_FILTER = "pre-filter-mentions";
+    
+    private static Map<String, String> entityURLMap;
+
+    private static PhraseFinder mentionSearcher;
+    private static LanguageDetector languageDetector;
 
     public PushBasedKBAStreamFeedClient(IHyracksTaskContext ctx, ARecordType recordType,
             PushBasedKBAStreamAdapter adapter) throws AsterixException {
+
+        Map<String, String> configuration = adapter.getConfiguration();
+
+        Set<String> nameVariants = new HashSet<String>();
+        KBATopicEntityLoader.loadNameVariants(nameVariants);
+        mentionSearcher = new PhraseFinder(nameVariants);
+        nameVariants = null;
+        
+        entityURLMap = new HashMap<String, String>();
+        KBATopicEntityLoader.buildNameURLMap(entityURLMap);
+
         this.recordType = recordType;
         this.streamItemProcessor = new KBAStreamItemProcessor(recordType, ctx);
         this.recordSerDe = new ARecordSerializerDeserializer(recordType);
         this.mutableRecord = streamItemProcessor.getMutableRecord();
-        this.initialize(adapter.getConfiguration());
-        this.dataInputQueue = this.batchSize > 0 ? new ArrayBlockingQueue<Map<String, Object>>(batchSize)
+        this.initialize(configuration);
+        this.dataInputQueue = this.batchSize > 0 ? new LinkedBlockingQueue<Map<String, Object>>(batchSize)
                 : new ArrayBlockingQueue<Map<String, Object>>(DEFAULT_BATCH_SIZE);
 
         String corpusDirectoryName = adapter.getDirectoryFromSplit();
+        
+        languageDetector = new LanguageDetector();
 
-        this.configuration = adapter.getConfiguration();
         streamDocServer = new KBAStreamServer(configuration, corpusDirectoryName, recordType, ctx.getFrameSize(),
                 dataInputQueue, executorService);
 
@@ -135,18 +157,22 @@ public class PushBasedKBAStreamFeedClient extends FeedClient {
     private static class FileContentProvider {
         private int maxTupleSize = Integer.MAX_VALUE;
         private BlockingQueue<Map<String, Object>> dataInputQueue;
-        private String[][] nameVariants = null;
+        //private String[][] nameVariants = null;
         private ARecordType recordType;
         private TTransport transport;
         private TBinaryProtocol protocol;
+        private StreamItem streamItem;
+        private KBARecord kbaDoc;
 
         private boolean doPrefiltering = false;
 
         public FileContentProvider(int frameSize, BlockingQueue<Map<String, Object>> dataInputQueue) {
             this.maxTupleSize = (int) (0.80 * frameSize) / 2;
             this.dataInputQueue = dataInputQueue;
+            this.streamItem = new StreamItem();
+            this.kbaDoc = new KBARecord();
 
-            nameVariants = KBATopicEntityLoader.loadNameVariants(KBARecord.ANALYZER);
+            //nameVariants = KBATopicEntityLoader.loadNameVariants(KBARecord.ANALYZER);
         }
 
         public FileContentProvider(ARecordType recordType, int frameSize, boolean doFiltering,
@@ -155,32 +181,48 @@ public class PushBasedKBAStreamFeedClient extends FeedClient {
             this.dataInputQueue = dataInputQueue;
             doPrefiltering = doFiltering;
 
-            nameVariants = KBATopicEntityLoader.loadNameVariants(KBARecord.ANALYZER);
+            this.streamItem = new StreamItem();
+            this.kbaDoc = new KBARecord(languageDetector);
+
+            //nameVariants = KBATopicEntityLoader.loadNameVariants(KBARecord.ANALYZER);
             this.recordType = recordType;
         }
 
         private void readChunk(File inputfile, String dirName) throws Exception {
-            FileInputStream fis = new FileInputStream(inputfile);
-            BufferedInputStream bis = new BufferedInputStream(new XZInputStream(fis), (32 * 1024));
+            BufferedInputStream bis = new BufferedInputStream(new XZInputStream(new FileInputStream(inputfile)),
+                    (32 * 1024));
             this.transport = new TIOStreamTransport(bis);
             this.protocol = new TBinaryProtocol(transport);
+
             transport.open();
             try {
                 while (true) {
-                    final StreamItem item = new StreamItem();
-                    item.read(protocol);
-                    final KBARecord kbaDoc = new KBARecord();
+                    streamItem.read(protocol);
 
-                    kbaDoc.setFieldValues(recordType, item, dirName);
-                    fieldNames = kbaDoc.getFieldNames();
+                    kbaDoc.setFieldValues(recordType, streamItem, dirName);
 
-                    if (doPrefiltering) {
-                        if (kbaDoc.containMention(nameVariants, true))
-                            LOGGER.log(Level.INFO,
-                                    "Found mentions in " + kbaDoc.getDoc_id() + " - {{" + kbaDoc.getMentionedEntity()
-                                            + "}}.");
+                    if (!kbaDoc.isEmpty()) {
+                        fieldNames = kbaDoc.getFieldNames();
+
+                        if (doPrefiltering) {
+                            if (kbaDoc.containMention(mentionSearcher, entityURLMap))
+                                LOGGER.log(
+                                        Level.INFO,
+                                        "Found mentions in " + kbaDoc.getDoc_id() + " - {{"
+                                                + kbaDoc.getMentionedEntity() + "}}.");
+                        }
+
+                        Object tuple = TupleUtils.splitTuple(kbaDoc.getFields(), maxTupleSize);
+
+                        if (tuple instanceof Map)
+                            dataInputQueue.add((Map) tuple);
+                        else {
+                            Map<String, Object> subtuples[] = (Map[]) tuple;
+                            for (Map<String, Object> subtuple : subtuples) {
+                                dataInputQueue.add(subtuple);
+                            }
+                        }
                     }
-                    dataInputQueue.add(kbaDoc.getFields());
 
                 }
 
@@ -193,7 +235,8 @@ public class PushBasedKBAStreamFeedClient extends FeedClient {
                 }
             } finally {
                 transport.close();
-                fis.close();
+                transport = null;
+                protocol = null;
                 bis.close();
             }
         }
@@ -203,29 +246,31 @@ public class PushBasedKBAStreamFeedClient extends FeedClient {
     private static class DataProvider implements Runnable {
         private FileContentProvider contentProvider;
         private boolean continuePush = true;
-        private File[] dateHourDirectoryList;
+        private List<File> dateHourDirectoryList;
         int numFiles = 0;
         int numHours = 0;
 
         public DataProvider(File[] dateHourDirectoryList, boolean doFiltering, ARecordType outputtype,
                 int maxFrameSize, BlockingQueue<Map<String, Object>> dataInputQueue) {
             this.contentProvider = new FileContentProvider(outputtype, maxFrameSize, doFiltering, dataInputQueue);
-            this.dateHourDirectoryList = dateHourDirectoryList;
-            this.numHours = this.dateHourDirectoryList.length;
+            this.dateHourDirectoryList = Arrays.asList(dateHourDirectoryList);
+            this.numHours = dateHourDirectoryList.length;
         }
 
         @Override
         public void run() {
             LOGGER.log(Level.INFO, "Feed adapter created and loaded successfully. Now start ingesting data.");
+            Iterator<File> directoryIterator = dateHourDirectoryList.iterator();
+            int index = 0;
             while (true) {
                 try {
-                    int index = 0;
-                    while ((index < numHours) && continuePush) {
-                        File dateHourDir = dateHourDirectoryList[index];
+
+                    while (directoryIterator.hasNext() && continuePush) {
+                        File dateHourDir = directoryIterator.next(); //dateHourDirectoryList[index];
 
                         LOGGER.log(Level.INFO, "Reading chunks from " + dateHourDir);
 
-                        final File[] chunks = KBACorpusFiles.getXZFiles(dateHourDir);
+                        File[] chunks = KBACorpusFiles.getXZFiles(dateHourDir);
                         String dirName = dateHourDir.getName();
                         // Get and feed next batch
                         for (File chunk : chunks) {
@@ -237,6 +282,7 @@ public class PushBasedKBAStreamFeedClient extends FeedClient {
                                 break;
                             contentProvider.readChunk(chunk, dirName);
                         }
+
                         index++;
                     }
                     break;

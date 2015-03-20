@@ -2,9 +2,7 @@ package edu.uci.ics.asterix.external.udl.adapter.factory;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -12,8 +10,11 @@ import org.trec.kba.streamcorpus.ContentItem;
 import org.trec.kba.streamcorpus.Language;
 import org.trec.kba.streamcorpus.StreamItem;
 
+import com.cybozu.labs.langdetect.LangDetectException;
+
 import edu.uci.ics.asterix.external.library.PhraseFinder;
 import edu.uci.ics.asterix.external.library.utils.KBAStreamDocument;
+import edu.uci.ics.asterix.external.library.utils.LanguageDetector;
 import edu.uci.ics.asterix.external.library.utils.StringUtil;
 import edu.uci.ics.asterix.external.library.utils.TextAnalysis;
 import edu.uci.ics.asterix.om.types.ARecordType;
@@ -28,20 +29,35 @@ public class KBARecord extends KBAStreamDocument {
     private HashMap<String, Object> fields;
 
     public final static String FIELD_MENTIONS = "mentions";
+    public final static String FIELD_PARENT = "parent_id";
+    public final static String FIELD_PART = "part_number";
 
     private String dirName;
     private String docId;
     private String bodyText;
     private String title;
 
+    private LanguageDetector languageDetector;
+
     public static final Analyzer ANALYZER = TextAnalysis.getAnalyzer();
+
+    public final static KBARecord INSTANCE = new KBARecord();
 
     public KBARecord() {
         super();
     }
 
+    public KBARecord(LanguageDetector languageDetector) {
+        super();
+        this.languageDetector = languageDetector;
+    }
+
     public KBARecord(StreamItem streamItem, String dirName) {
         this.initialize(streamItem, dirName);
+    }
+
+    public boolean isEmpty() {
+        return (bodyText.isEmpty() && title.isEmpty());
     }
 
     @Override
@@ -99,9 +115,7 @@ public class KBARecord extends KBAStreamDocument {
             else if (fieldName.equals(FIELD_BODY)) {
                 this.bodyText = getCleanVisible(body);
                 fields.put(FIELD_BODY, bodyText);
-            } else if (fieldName.equals(FIELD_LANGUAGE))
-                fields.put(FIELD_LANGUAGE, getLanguage(body));
-            else if (fieldName.equals(FIELD_TITLE))
+            } else if (fieldName.equals(FIELD_TITLE))
                 fields.put(FIELD_TITLE, getTitle());
             else if (fieldName.equals(FIELD_ANCHOR))
                 fields.put(FIELD_ANCHOR, getAnchor());
@@ -111,18 +125,30 @@ public class KBARecord extends KBAStreamDocument {
             }
         }
 
+        String language = getLanguage(body);
+        if (language == null) {
+            if (bodyText!=null && !bodyText.isEmpty())
+                language = languageDetector.detect(bodyText);
+
+            if (language == null || language.isEmpty()) {
+                language = StringUtil.EMPTY_STRING;
+            }
+        }
+        fields.put(FIELD_LANGUAGE, language);
+
         streamItem.clear();
     }
 
     public String[] getFieldNames() {
         return fieldNames;
     }
-
+    
     private String getLanguage(ContentItem ci) {
         Language language = ci.getLanguage();
 
-        if (language == null)
-            return "";
+        if (language == null) {
+            return null;
+        }
 
         if (language.isSetCode())
             return language.getCode();
@@ -130,7 +156,7 @@ public class KBARecord extends KBAStreamDocument {
         else if (language.isSetName())
             return language.getName();
 
-        return "";
+        return null;
     }
 
     public String getDirName() {
@@ -150,7 +176,7 @@ public class KBARecord extends KBAStreamDocument {
             return StringUtil.EMPTY_STRING;
 
         if (ci.getClean_visible().length() > 0) {
-            return StringUtil.removeSpecialChars(ci.getClean_visible());
+            return StringUtil.cleanText(ci.getClean_visible());
         } else {
             return StringUtil.EMPTY_STRING;
         }
@@ -180,27 +206,6 @@ public class KBARecord extends KBAStreamDocument {
         return (getTitle() + " " + getBodyText());
     }
 
-    public boolean containMention(Set<String[]> nameVariants) throws Exception {
-        String content = getContent();
-
-        if (content.trim().isEmpty())
-            return false;
-
-        Map<String, Set<Integer>> analyzed_text = new HashMap<String, Set<Integer>>();
-        TextAnalysis.analyze(ANALYZER, content, analyzed_text);
-
-        // Find an entity mentioned in the text
-        Iterator<String[]> nameVariantsIterator = nameVariants.iterator();
-        while (nameVariantsIterator.hasNext()) {
-            String name_terms[] = nameVariantsIterator.next();
-            if (PhraseFinder.find(analyzed_text, name_terms) == true) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     public Map<String, Object> getFields() {
         return this.fields;
     }
@@ -210,32 +215,17 @@ public class KBARecord extends KBAStreamDocument {
         this.fields.clear();
     }
 
-    public boolean containMention(String[][] nameVariants) throws Exception {
-        return containMention(nameVariants, false);
-    }
-
-    public boolean containMention(String[][] nameVariants, boolean findAll) throws Exception {
+    public boolean containMention(PhraseFinder mentionSearcher) {
         String content = getContent();
-        mentionedEntities.clear();
-
         if (content.trim().isEmpty())
             return false;
+        return mentionSearcher.containMention(mentionedEntities, content);
+    }
 
-        Map<String, Set<Integer>> analyzed_text = new HashMap<String, Set<Integer>>();
-        TextAnalysis.analyze(ANALYZER, content, analyzed_text);
-
-        for (int i = 0; i < nameVariants.length; i++) {
-            if (PhraseFinder.find(analyzed_text, nameVariants[i]) == true) {
-                if (findAll)
-                    this.mentionedEntities.add(StringUtil.concatenate(nameVariants[i], ' '));
-                else
-                    return true;
-            }
-        }
-
-        if (findAll)
-            return (!mentionedEntities.isEmpty());
-        else
+    public boolean containMention(PhraseFinder mentionSearcher, Map<String, String> urlMap) {
+        String content = getContent();
+        if (content.trim().isEmpty())
             return false;
+        return mentionSearcher.containMention(urlMap, mentionedEntities, content);
     }
 }
