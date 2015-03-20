@@ -40,7 +40,7 @@ public abstract class TextSimilarity {
      * @param text1
      * @param text2
      */
-    protected void setTermVectors(String text1, String text2) {
+    protected void buildTermVectors(String text1, String text2) {
         reset();
         analyzer.analyze(text1);
         length1 = analyzer.getLength();

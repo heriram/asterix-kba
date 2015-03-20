@@ -1,10 +1,5 @@
 package edu.uci.ics.asterix.external.library.textsimiliarities;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import edu.uci.ics.asterix.external.library.textanalysis.TextAnalyzer;
 
 /**
@@ -25,10 +20,12 @@ public class CosinusSimilarity extends TextSimilarity {
 
     @Override
     public double computeSimilarity(String text1, String text2) {
-        setTermVectors(text1, text2);
+        buildTermVectors(text1, text2);
 
         int len1 = termVector1.size();
         int len2 = termVector2.size();
+        
+        termVector1.keySet().retainAll(allTerms);
 
         double scalar = 0, norm1 = 0, norm2 = 0;
 

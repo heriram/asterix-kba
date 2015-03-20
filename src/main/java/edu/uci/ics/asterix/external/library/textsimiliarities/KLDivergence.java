@@ -1,5 +1,6 @@
 package edu.uci.ics.asterix.external.library.textsimiliarities;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -15,9 +16,11 @@ import edu.uci.ics.asterix.external.library.textanalysis.TextAnalyzer;
  */
 
 public class KLDivergence extends TextSimilarity {
-    private final double EPSILON = 1e-10;
-    private final double LOG2 = Math.log(2.0);
+    protected final double EPSILON = 1e-10;
+    protected final double LOG2 = Math.log(2.0);
 
+    protected double prob1, prob2;
+    
     public KLDivergence() {
         super();
     }
@@ -26,51 +29,46 @@ public class KLDivergence extends TextSimilarity {
         super(analyzer);
     }
 
-    private double[] probabilitiesOf(String term) {
-        double probs[] = new double[2];
-        probs[0] = termVector1.containsKey(term) ? termVector1.get(term) / (double) length1 : EPSILON;
-        probs[1] = termVector2.containsKey(term) ? termVector2.get(term) / (double) length2 : EPSILON;
-        return probs;
+    protected void computeProbabilitiesOf(String term) {
+        prob1 = termVector1.containsKey(term) ? termVector1.get(term) / (double) length1 : EPSILON;
+        prob2 = termVector2.containsKey(term) ? termVector2.get(term) / (double) length2 : EPSILON;
     }
 
+    
     @Override
     public double computeSimilarity(String text1, String text2) {
-        setTermVectors(text1, text2);
+        buildTermVectors(text1, text2);
 
         int numKeysRemaining = termVector1.size();
         double result = 0.0;
         double assignedMass1 = 0.0;
         double assignedMass2 = 0.0;
 
-        double p1, p2;
-
         for (String key : allTerms) {
-            double probs[] = probabilitiesOf(key);
-            p1 = probs[0];
-            p2 = probs[1];
-
+            computeProbabilitiesOf(key);
+           
             numKeysRemaining--;
-            assignedMass1 += p1;
-            assignedMass2 += p2;
+            assignedMass1 += prob1;
+            assignedMass2 += prob2;
             
-            if (p1 >= EPSILON) {
-                double logFract = Math.log(p1 / p2);
+            if (prob1 >= EPSILON) {
+                double logFract = Math.log(prob1 / prob2);
                 if (logFract == Double.POSITIVE_INFINITY) {
                     return Double.POSITIVE_INFINITY; // can't recover
                 }
-                result += p1 * (logFract / LOG2); // express it in log base 2
+                result += prob1 * (logFract / LOG2); // express it in log base 2
             }
         }
 
         if (numKeysRemaining != 0) {
-            p1 = (1.0 - assignedMass1) / numKeysRemaining;
-            if (p1 > EPSILON) {
-                p2 = (1.0 - assignedMass2) / numKeysRemaining;
-                double logFract = Math.log(p1 / p2);
+            prob1 = (1.0 - assignedMass1) / numKeysRemaining;
+            if (prob1 > EPSILON) {
+                prob2 = (1.0 - assignedMass2) / numKeysRemaining;
+                double logFract = Math.log(prob1 / prob2);
                 if (logFract == Double.POSITIVE_INFINITY) {
                     return Double.POSITIVE_INFINITY; // can't recover
                 }
-                result += numKeysRemaining * p1 * (logFract / LOG2); // express it in log base 2
+                result += numKeysRemaining * prob1 * (logFract / LOG2); // express it in log base 2
             }
         }
         return 1-result;
