@@ -21,10 +21,14 @@ import edu.uci.ics.asterix.external.library.utils.TextAnalysis;
 
 public class KBAStreamFilteringFunction implements IExternalScalarFunction {
     private static final Logger LOGGER = Logger.getLogger(KBAStreamFilteringFunction.class.getName());
-    private String nameVariants[][] = null;
+    private Set<String> nameVariants = null;
     private JUnorderedList mentionList;
+    private Set<String> mentions;
+
     private boolean bodyContentIsList = true;
     private final Analyzer ANALYZER = TextAnalysis.getAnalyzer();
+
+    private PhraseFinder searcher;
 
     @Override
     public void deinitialize() {
@@ -35,8 +39,12 @@ public class KBAStreamFilteringFunction implements IExternalScalarFunction {
         LOGGER.info("Initializing KBAStreamFilteringFunction by loading the set of entities.");
         this.mentionList = new JUnorderedList(functionHelper.getObject(JTypeTag.STRING));
 
+        this.mentions = new HashSet<>();
+
         // Load the entities into memory for faster access
-        this.nameVariants = KBATopicEntityLoader.loadNameVariants(ANALYZER);
+        this.nameVariants = new HashSet<String>();
+        KBATopicEntityLoader.loadNameVariants(this.nameVariants);
+        this.searcher = new PhraseFinder(this.nameVariants);
 
         JRecord inputRecord = (JRecord) functionHelper.getArgument(0);
         switch (inputRecord.getFields()[3].getTypeTag()) {
@@ -51,10 +59,11 @@ public class KBAStreamFilteringFunction implements IExternalScalarFunction {
     /*
      * Checking entity mentions in a text
      */
-    private void findEntities(IFunctionHelper functionHelper, String nameVariants[][]) throws Exception {
-        if (nameVariants == null)
+    private void findEntities(IFunctionHelper functionHelper) throws Exception {
+        if (nameVariants == null) {
             throw new Exception("Cannot start searching over a null or an empty set... "
                     + "Please initialize the name variant set first.");
+        }
 
         this.mentionList.clear();
         JRecord inputRecord = (JRecord) functionHelper.getArgument(0);
@@ -75,47 +84,42 @@ public class KBAStreamFilteringFunction implements IExternalScalarFunction {
             sb.append(" " + ((JString) bodyField).getValue());
         }
 
-        Map<String, Set<Integer>> analyzed_text = new HashMap<String, Set<Integer>>();
-        TextAnalysis.analyze(ANALYZER, sb.toString(), analyzed_text);
+        searcher.containMention(mentions, sb.toString());
 
         // Find all entities mentioned in the text
-        for (int i = 0; i < nameVariants.length; i++) {
-            if (PhraseFinder.find(analyzed_text, nameVariants[i]) == true) {
-                JString newField = (JString) functionHelper.getObject(JTypeTag.STRING);
-                newField.setValue(StringUtil.concatenate(nameVariants[i], ' '));
-                mentionList.add(newField);
-            }
+        for (String name : mentions) {
+            JString newField = (JString) functionHelper.getObject(JTypeTag.STRING);
+            newField.setValue(name);
+            mentionList.add(newField);
         }
 
     }
-    
-
 
     @Override
     public void evaluate(IFunctionHelper functionHelper) throws Exception {
         // Get the input
         JRecord inputRecord = (JRecord) functionHelper.getArgument(0);
+        int num_found = 0;
 
         // Check entity mentions - store found entities in mentionList
-        findEntities(functionHelper, nameVariants);
+        findEntities(functionHelper);
 
-        int num_found = mentionList.size();
+        num_found = mentionList.size();
 
         if (num_found > 0) {
             LOGGER.log(Level.INFO, "Mention list has " + num_found + " elements.");
-            
+
+            IJObject[] fields = inputRecord.getFields();
+            int fieldLength = fields.length;
+
+            if (fieldLength > 9) {
+                inputRecord.setValueAtPos(9, mentionList);
+                //inputRecord.setField("mentions", mentionList);
+
+            } else {
+                inputRecord.addField("mentions", mentionList);
+            }
         }
-        IJObject[] fields = inputRecord.getFields();
-        int fieldLength = fields.length;
-        
-        
-        if (fieldLength>9) {
-            inputRecord.setValueAtPos(9, mentionList);
-            //inputRecord.setField("mentions", mentionList);
-            
-        } else 
-            inputRecord.addField("mentions", mentionList);
-        
         functionHelper.setResult(inputRecord);
     }
 

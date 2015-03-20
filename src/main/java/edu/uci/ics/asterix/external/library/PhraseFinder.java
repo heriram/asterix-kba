@@ -1,67 +1,284 @@
 package edu.uci.ics.asterix.external.library;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 
+import edu.uci.ics.asterix.external.library.textanalysis.Tokenizer;
+import edu.uci.ics.asterix.external.library.utils.StringUtil;
 import edu.uci.ics.asterix.external.library.utils.TextAnalysis;
 
 public class PhraseFinder {
+    private Tokenizer tokenizer;
 
-    public static boolean find(String text, String phrase) throws Exception {
-        return find(TextAnalysis.getAnalyzer(), text, phrase);
+    private Map<String, Set<Posting>> phraseInvertedList;
+    private Set<String> phraseList;
+    private int maxPhraseLength = 0;
+    private Set<String> mentions;
+
+    public PhraseFinder(String[] phrases) {
+        phraseInvertedList = new HashMap<>();
+        this.tokenizer = Tokenizer.INSTANCE;
+        mentions = new HashSet<>();
+
+        buildInvertedList(Arrays.asList(phrases));
     }
 
-    public static boolean find(Map<String, Set<Integer>> analyzed_text, String[] phrase_terms) {
-        // No search terms
-        if (phrase_terms.length == 0)
-            return false;
+    public PhraseFinder(Collection<String> phrases) {
+        phraseInvertedList = new HashMap<>();
+        this.tokenizer = Tokenizer.INSTANCE;
+        mentions = new HashSet<>();
+ 
+        buildInvertedList(phrases);
 
-        // If only one term, no need to do phrase search
-        if (phrase_terms.length == 1)
-            return analyzed_text.containsKey(phrase_terms[0]);
+    }
 
-        // For two or more terms
-        if (!analyzed_text.containsKey(phrase_terms[0]))
-            return false;
+    private void buildInvertedList(Collection<String> phrases) {
+        Set<Posting> postingList = null;
+        phraseList = new HashSet<>();
 
-        /* Assuming terms[i] has been found, then check the next term */
+        int index = 0;
+        for (String phrase : phrases) {
+            String phraseTerms[] = tokenizer.tokenize(phrase, true); //TextAnalysis.analyze(ENTITY_ANALYZER, phrase);
 
-        // Get the positions of the previous term
-        Set<Integer> pos_prev = analyzed_text.get(phrase_terms[0]);
-        for (int i = 1; i < phrase_terms.length; i++) {
-            if (!analyzed_text.containsKey(phrase_terms[i]))
-                return false;
+            phraseList.add(StringUtil.concatenate(phraseTerms, ' '));
 
-            // Get the positions of the current term
-            Set<Integer> pos_curr = analyzed_text.get(phrase_terms[i]);
-            boolean consecutive = false;
-            for (int pos : pos_curr) {
-                if (pos_prev.contains(pos - 1)) {
-                    consecutive = true;
-                    break;
+            if (phraseTerms.length > maxPhraseLength) {
+                maxPhraseLength = phraseTerms.length;
+            }
+
+            for (int pos = 0; pos < phraseTerms.length; pos++) {
+                String term = phraseTerms[pos];
+
+                if (phraseInvertedList.containsKey(term)) {
+                    postingList = phraseInvertedList.get(term);
+                } else {
+                    postingList = new HashSet<>();
+                }
+                postingList.add(new Posting(index, pos));
+                phraseInvertedList.put(term, postingList);
+            }
+            index++;
+        }
+
+    }
+    
+
+
+    @Override
+    public String toString() {
+        if (phraseInvertedList == null)
+            return null;
+
+        Iterator<Entry<String, Set<Posting>>> it = phraseInvertedList.entrySet().iterator();
+        StringBuilder sb = new StringBuilder();
+        while (it.hasNext()) {
+            Entry<String, Set<Posting>> entry = it.next();
+            sb.append(entry.getKey() + ":");
+            Set<Posting> postingList = entry.getValue();
+            for (Posting p : postingList) {
+                sb.append(" " + p.toString());
+            }
+            sb.append('\n');
+
+        }
+
+        return sb.toString();
+    }
+
+    public boolean containMention(String text) {
+        return containMention(mentions, text);
+    }
+    
+    public boolean containMention(Map<String, String> urlMap, Set<String> mentionList, String text) {
+        mentionList.clear();
+        String tokens[] = tokenizer.tokenize(text, true);
+        
+        StringBuilder candidatePhrase = new StringBuilder();
+        boolean found=false;
+        try {
+            Set<Posting> prevPost = null;
+            int count = 0;
+            for (int t = 0; t < tokens.length; t++) {
+                String token = new String(tokens[t]);
+
+                // Check if the topics contain current token
+                if (phraseInvertedList.containsKey(token)) {
+                    // Check if the current token is a valid word
+                    if (count == 0) {
+                        candidatePhrase = new StringBuilder(token);
+                        count++;
+                    }
+
+                    // Check if current token is part of the dictionary
+                    if (phraseList.contains(token)) {
+                        mentionList.add(urlMap.get(token));
+                        found = true;
+                    }
+
+                    // Is the token could be part of a phrase ?
+                    // Get the posting list for this token
+                    Set<Posting> currPostList = phraseInvertedList.get(token);
+                    for (Posting currPost : currPostList) {
+                        if (currPost.termPosition > 0 && prevPost != null) {
+                            Posting prev = new Posting(currPost.phraseIndex, (currPost.termPosition - 1));
+                            if (prevPost.contains(prev)) {
+                                candidatePhrase.append(" " + token);
+                                count++;
+                                String terms = candidatePhrase.toString();
+                                if (phraseList.contains(terms)) {
+                                    mentionList.add(urlMap.get(terms));
+                                    found = true;
+                                }
+                            } else {
+                                candidatePhrase.setLength(0);
+                                count = 0;
+
+                            }
+                        }
+                    }
+
+                    if (count != 0) {
+                        prevPost = currPostList;
+                    } else {
+                        prevPost = null;
+                    }
+
+                } else {
+                    // If one term or more terms found but not constituting a valid phrase
+                    count = 0;
+                    candidatePhrase.setLength(0);
+                    prevPost = null;
                 }
             }
 
-            if (!consecutive)
-                return false;
-
-            // Move on to the next term
-            pos_prev = pos_curr;
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // Help the GC...
+            candidatePhrase = null;
+            tokens = null;
         }
-
-        // Reaching this far meaning that we have a hit
-        return true;
+        return found;
+        
     }
 
-    public static boolean find(Analyzer analyzer, String text, String phrase) throws Exception {
-        String terms[] = TextAnalysis.analyze(analyzer, phrase);
-        Map<String, Set<Integer>> analyzed = new HashMap<String, Set<Integer>>();
-        TextAnalysis.analyze(analyzer, text, analyzed);
-        
-        return find(analyzed, terms);
+    public boolean containMention(Set<String> mentionList, String text) {
+        mentionList.clear();
+        String tokens[] = tokenizer.tokenize(text, true);
+        StringBuilder candidatePhrase = new StringBuilder();
+        boolean found=false;
+        try {
+            Set<Posting> prevPost = null;
+            int count = 0;
+            for (int t = 0; t < tokens.length; t++) {
+                String token = new String(tokens[t]);
+
+                // Check if the topics contain current token
+                if (phraseInvertedList.containsKey(token)) {
+                    // Check if the current token is a valid word
+                    if (count == 0) {
+                        candidatePhrase = new StringBuilder(token);
+                        count++;
+                    }
+
+                    // Check if current token is part of the dictionary
+                    if (phraseList.contains(token)) {
+                        mentionList.add(token);
+                        found = true;
+                    }
+
+                    // Is the token could be part of a phrase ?
+                    // Get the posting list for this token
+                    Set<Posting> currPostList = phraseInvertedList.get(token);
+                    for (Posting currPost : currPostList) {
+                        if (currPost.termPosition > 0 && prevPost != null) {
+                            Posting prev = new Posting(currPost.phraseIndex, (currPost.termPosition - 1));
+                            if (prevPost.contains(prev)) {
+                                candidatePhrase.append(" " + token);
+                                count++;
+                                String terms = candidatePhrase.toString().intern();
+                                if (phraseList.contains(terms)) {
+                                    mentionList.add(terms);
+                                    found = true;
+                                }
+                            } else {
+                                candidatePhrase.setLength(0);
+                                count = 0;
+
+                            }
+                        }
+                    }
+
+                    if (count != 0) {
+                        prevPost = currPostList;
+                    } else {
+                        prevPost = null;
+                    }
+
+                } else {
+                    // If one term or more terms found but not constituting a valid phrase
+                    count = 0;
+                    candidatePhrase.setLength(0);
+                    prevPost = null;
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // Help the GC...
+            candidatePhrase = null;
+            tokens = null;
+        }
+        return found;
+    }
+
+    public Set<String> getMentions() {
+        return mentions;
+    }
+
+    public static class Posting {
+        int phraseIndex;
+        int termPosition;
+
+        public Posting(int pi, int tp) {
+            phraseIndex = pi;
+            termPosition = tp;
+        }
+
+        @Override
+        public String toString() {
+            return "<" + phraseIndex + "," + termPosition + ">";
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + phraseIndex;
+            result = prime * result + termPosition;
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+
+            if (obj == null || getClass() != obj.getClass())
+                return false;
+
+            Posting other = (Posting) obj;
+            return (other.phraseIndex == phraseIndex && other.termPosition == termPosition);
+        }
 
     }
 

@@ -10,6 +10,7 @@ import edu.uci.ics.asterix.external.library.udf.featuregeneration.AbstractFeatur
 import edu.uci.ics.asterix.external.library.udf.featuregeneration.EntitySearcher;
 import edu.uci.ics.asterix.external.library.utils.TupleUtils;
 import edu.uci.ics.asterix.external.udl.adapter.factory.KBARecord;
+import edu.uci.ics.asterix.om.types.ARecordType;
 
 public abstract class AbstractFeatureExtractionFunction implements IExternalScalarFunction {
     protected EntitySearcher searcher;
@@ -18,20 +19,29 @@ public abstract class AbstractFeatureExtractionFunction implements IExternalScal
     
     private Set<String> nameVariants;
     
+    /*
+     *  Initialize the entity mention finder, including building the inverted list
+     */
     protected void initializeSearcher() {
-        // Initialize the entity mention finder, including building the inverted list
+       
         this.nameVariants = new HashSet<String>();
         KBATopicEntityLoader.loadNameVariants(nameVariants);
         this.searcher = new EntitySearcher(nameVariants);
     }
     
+    /*
+     * Initialize the field positions for fast lookup in the feed functions
+     */
     protected void initializeFieldPositions(JRecord inputRecord) {
         this.fieldPositions = new HashMap<String, Integer>();
-        String fieldNames[] = { KBARecord.FIELD_TITLE, KBARecord.FIELD_BODY, KBARecord.FIELD_ANCHOR,
-                KBARecord.FIELD_SOURCE, KBARecord.FIELD_LANGUAGE };
-
+        
+        ARecordType recordType = inputRecord.getRecordType();
+        String fieldNames[] = recordType.getFieldNames();
+        
+        int index = 0;
         for (String field : fieldNames) {
-            fieldPositions.put(field, TupleUtils.getFieldPosByName(inputRecord, field));
+            fieldPositions.put(field, index);
+            index++;
         }
     }
     

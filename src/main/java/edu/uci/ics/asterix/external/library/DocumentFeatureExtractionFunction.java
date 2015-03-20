@@ -7,8 +7,9 @@ public class DocumentFeatureExtractionFunction extends AbstractFeatureExtraction
     
     @Override
     public void initialize(IFunctionHelper functionHelper) throws Exception {
-        this.docFeature = new DocumentFeature();       
         // Get the field positions
         initializeFieldPositions((JRecord) functionHelper.getArgument(0));
+        this.docFeature = new DocumentFeature();       
+        
     }
 }

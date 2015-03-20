@@ -1,6 +1,6 @@
 package edu.uci.ics.asterix.external.library;
 
-public class DocuementFeatureExtractionFunctionFactory implements IFunctionFactory {
+public class DocumentFeatureExtractionFunctionFactory implements IFunctionFactory {
 
     @Override
     public IExternalFunction getExternalFunction() {
