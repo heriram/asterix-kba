@@ -7,19 +7,24 @@ import edu.uci.ics.asterix.common.exceptions.AsterixException;
 import edu.uci.ics.asterix.external.library.IFunctionHelper;
 import edu.uci.ics.asterix.external.library.TopicEntity;
 import edu.uci.ics.asterix.external.library.java.IJObject;
+import edu.uci.ics.asterix.external.library.java.JObjects.JDouble;
+import edu.uci.ics.asterix.external.library.java.JObjects.JInt;
+import edu.uci.ics.asterix.external.library.java.JObjects.JOrderedList;
 import edu.uci.ics.asterix.external.library.java.JObjects.JRecord;
 import edu.uci.ics.asterix.external.library.java.JObjects.JString;
-import edu.uci.ics.asterix.external.library.java.JObjects.JInt;
-import edu.uci.ics.asterix.external.library.java.JObjects.JDouble;
 import edu.uci.ics.asterix.external.library.utils.Util;
 import edu.uci.ics.asterix.external.udl.adapter.factory.KBARecord;
 
 public class DocumentEntityFeature extends AbstractFeatureGenerator {
-    EntitySearcher searcher;
+    private EntitySearcher searcher;
+
+    public DocumentEntityFeature(EntitySearcher searcher) {
+        super();
+        this.searcher = searcher;
+    }
 
     public DocumentEntityFeature(HashMap<String, String> props, EntitySearcher searcher) {
         super(props);
-
         this.searcher = searcher;
     }
 
@@ -82,23 +87,34 @@ public class DocumentEntityFeature extends AbstractFeatureGenerator {
 
         IJObject[] fields = inputRecord.getFields();
 
+        String body = conctatenateBodyContent((JOrderedList) fields[fieldPositions.get(KBARecord.FIELD_BODY)]);
+        int bodyLength = tokenizer.tokenize(body).length;
+        int nBody = 0;
+        int bodyMentionPositions[] = searcher.search(body);
+        if (bodyMentionPositions != null)
+            nBody = bodyMentionPositions.length;
+
         JString jString = (JString) fields[fieldPositions.get(KBARecord.FIELD_TITLE)];
         String title = jString.getValue();
-        int titleMentionPositions[] = searcher.search(title);
-
-        jString = (JString) fields[fieldPositions.get(KBARecord.FIELD_BODY)];
-        String body = jString.getValue();
-        int bodyMentionPositions[] = searcher.search(body);
-        int bodyLength = tokenizer.tokenize(body).length;
+        int nTitle = 0;
+        
+        if (title != null && !title.isEmpty()) {
+            int titleMentionPositions[] = searcher.search(title);
+            if (titleMentionPositions != null)
+                nTitle = titleMentionPositions.length;
+        }
 
         jString = (JString) fields[fieldPositions.get(KBARecord.FIELD_ANCHOR)];
         String anchor = jString.getValue();
+        int nAnchor = 0;
         int anchorMentionPositions[] = searcher.search(anchor);
+        if (anchorMentionPositions != null)
+            nAnchor = anchorMentionPositions.length;
 
         int fpos = 0;
         int lpos = 0;
 
-        if (bodyMentionPositions == null && bodyLength > 0) {
+        if (bodyMentionPositions != null && bodyLength > 0) {
             int maxMin[] = Util.findMaxAndMin(bodyMentionPositions);
             fpos = maxMin[0];
             lpos = maxMin[1];
@@ -113,9 +129,10 @@ public class DocumentEntityFeature extends AbstractFeatureGenerator {
         // Generate results
         JRecord result = (JRecord) functionHelper.getResultObject();
         try {
-            result.setField(EDocumentEntityFeature.MENTIONSTITLE.getName(), new JInt(titleMentionPositions.length)); // N(D_title, E)
-            result.setField(EDocumentEntityFeature.MENTIONSBODY.getName(), new JInt(bodyMentionPositions.length)); // N(D_body, E)
-            result.setField(EDocumentEntityFeature.MENTIONSANCHOR.getName(), new JInt(anchorMentionPositions.length)); // N(D_anchor, E)
+            result.setField("doc_id", fields[fieldPositions.get(KBARecord.FIELD_DOCUMENT_ID)]);
+            result.setField(EDocumentEntityFeature.MENTIONSTITLE.getName(), new JInt(nTitle)); // N(D_title, E)
+            result.setField(EDocumentEntityFeature.MENTIONSBODY.getName(), new JInt(nBody)); // N(D_body, E)
+            result.setField(EDocumentEntityFeature.MENTIONSANCHOR.getName(), new JInt(nAnchor)); // N(D_anchor, E)
             result.setField(EDocumentEntityFeature.FIRSTPOS.getName(), new JInt(fpos)); // FPOS(D, E)
             result.setField(EDocumentEntityFeature.LASTPOS.getName(), new JInt(lpos)); // LPOS(D, E)
             result.setField(EDocumentEntityFeature.SPREAD.getName(), new JInt(spread)); // SPR(D, E)

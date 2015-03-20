@@ -5,7 +5,9 @@ import java.util.Map;
 
 import edu.uci.ics.asterix.external.library.IFunctionHelper;
 import edu.uci.ics.asterix.external.library.TopicEntity;
+import edu.uci.ics.asterix.external.library.java.JObjects.JOrderedList;
 import edu.uci.ics.asterix.external.library.java.JObjects.JRecord;
+import edu.uci.ics.asterix.external.library.java.JObjects.JString;
 import edu.uci.ics.asterix.external.library.textanalysis.Tokenizer;
 import edu.uci.ics.asterix.external.udl.adapter.factory.KBARecord;
 
@@ -26,6 +28,11 @@ public abstract class AbstractFeatureGenerator {
 
     protected HashMap<String, String> props;
 
+    public AbstractFeatureGenerator() {
+        this.tokenizer = Tokenizer.INSTANCE;
+    }
+    
+    
     public AbstractFeatureGenerator(HashMap<String, String> props) {
         this.props = props;
         this.tokenizer = Tokenizer.INSTANCE;
@@ -48,6 +55,17 @@ public abstract class AbstractFeatureGenerator {
     public abstract String getFeatureVector(KBARecord streamDoc, TopicEntity entity);
     public abstract JRecord getResultRecord(IFunctionHelper functionHelper, Map<String, Integer> fieldPositions);
     
+    protected String conctatenateBodyContent(JOrderedList bodyContent) {
+        StringBuilder sb= new StringBuilder();
+        
+        JString jString =  (JString) bodyContent.getElement(0);
+        sb.append(jString.getValue());
+        for (int i=1; i<bodyContent.size(); i++) {
+            jString =  (JString) bodyContent.getElement(i);
+            sb.append(" " + jString.getValue());
+        }
+        return sb.toString();
+    }
 
     /**
      * Generate Arff header with feature names and types (i.e., "@ATTRIBUTE"

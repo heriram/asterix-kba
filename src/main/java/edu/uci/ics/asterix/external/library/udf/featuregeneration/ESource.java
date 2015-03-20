@@ -1,5 +1,6 @@
 package edu.uci.ics.asterix.external.library.udf.featuregeneration;
 
+
 public enum ESource {
     news(0),
     MAINSTREAM_NEWS(0),
@@ -12,6 +13,7 @@ public enum ESource {
     REVIEW(6),
     WEBLOG(7),
     CLASSIFIED(8);
+    
     
     private int value;
     
@@ -44,7 +46,9 @@ public enum ESource {
     }
     
     public static int getValueOfName(String name) {
-        return valueOf(name).value;
+        if (name!=null && !name.isEmpty())
+            return valueOf(name).value;
+        else return -1;
     }
     
     public int getValue() {
