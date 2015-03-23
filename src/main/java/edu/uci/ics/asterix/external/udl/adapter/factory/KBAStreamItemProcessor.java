@@ -127,6 +127,14 @@ public class KBAStreamItemProcessor {
                 case UNORDEREDLIST:
                     setListContent(i);
                     break;
+                case INT32:
+                    int fieldValue = 0;
+                    Integer field = (Integer)recordFields.get(fieldNames[i]);
+                    if (field!=null)
+                        fieldValue = (int)field;
+                    
+                    ((AMutableInt32) mutableKBAStreamDocumentFields[i]).setValue(fieldValue);
+                    break;
                 default:
                     String fieldsValue = (String) recordFields.get(fieldNames[i]);
                     if (fieldsValue == null) {
