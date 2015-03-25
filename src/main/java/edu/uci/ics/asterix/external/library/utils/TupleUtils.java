@@ -2,6 +2,7 @@ package edu.uci.ics.asterix.external.library.utils;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.BlockingQueue;
 
 import edu.uci.ics.asterix.external.library.java.IJObject;
 import edu.uci.ics.asterix.external.library.java.JObjects.JRecord;
@@ -13,6 +14,15 @@ public class TupleUtils extends StringUtil {
             KBARecord.FIELD_SOURCE, KBARecord.FIELD_SCHOST, KBARecord.FIELD_TITLE, KBARecord.FIELD_ANCHOR,
             KBARecord.FIELD_LANGUAGE };
 
+    /**
+     * Compute the size of a tuple to figure out whether it will fit into
+     * the Hyracs frame
+     * 
+     * @param tupleMap
+     *            The {@link HashMap} representation of the tuple
+     * @return
+     *         The size of the tuple (int)
+     */
     @SuppressWarnings("unchecked")
     public static int getTupleSize(Map<String, Object> tupleMap) {
         Iterator<Object> it = tupleMap.values().iterator();
@@ -93,6 +103,54 @@ public class TupleUtils extends StringUtil {
         return splitTuple(fields, tupleSize, maxSize);
     }
 
+    public static void splitTuple(Map<String, Object> fields, int tupleSize, int maxTupleSize,
+            BlockingQueue<Map<String, Object>> dataInputQueue) {
+        if (dataInputQueue != null) {
+            // Get the min. number of splits
+            int numSplits = (int) Math.ceil(tupleSize / (double) maxTupleSize);
+            Map<String, Object> splitMap[] = getTupleSplits(fields, getBodyFieldSplits(fields, numSplits));
+            for(Map<String, Object> tuple: splitMap) {
+                dataInputQueue.add(tuple);
+            }
+        }
+    }
+
+    public static String[] getBodyFieldSplits(Map<String, Object> fields, int minTupleSplits) {
+        // Split the body content into numSplits number of parts
+        String bodyText = (String) fields.get(KBARecord.FIELD_BODY);
+
+        // Get max size of the body text in each split
+        int contentSplitSize = (int) Math.ceil(bodyText.length() / (double) minTupleSplits);
+
+        return breakString(bodyText, contentSplitSize);
+    }
+
+    public static Map<String, Object>[] getTupleSplits(Map<String, Object> fields, String bodyTextSplits[]) {
+        String parentId = (String) fields.get(KBARecord.FIELD_DOCUMENT_ID);     
+        int numSplits = bodyTextSplits.length;
+
+        // Get smaller tuple splits
+        @SuppressWarnings("unchecked")
+        Map<String, Object> fieldsSplits[] = new Map[numSplits];
+
+        // Setup child-specific fields
+        for (int part = 1; part < numSplits; part++) {
+            fieldsSplits[part] = new HashMap<String, Object>();
+            UUID uuid = UUID.randomUUID();
+            fieldsSplits[part].put(KBARecord.FIELD_DOCUMENT_ID, uuid.toString());
+            fieldsSplits[part].put(KBARecord.FIELD_PARENT, parentId);
+            fieldsSplits[part].put(KBARecord.FIELD_BODY, bodyTextSplits[part]);
+            fieldsSplits[part].put(KBARecord.FIELD_PART, part);
+        }
+
+        // Update the parent's field values
+        fields.put(KBARecord.FIELD_BODY, bodyTextSplits[0]);
+        fields.put(KBARecord.FIELD_PART, 0);
+        fieldsSplits[0] = fields;
+
+        return fieldsSplits;
+    }
+
     public static int getFieldPosByName(JRecord jRecord, String fieldName) {
         ARecordType recordType = jRecord.getRecordType();
         return getFieldPosByName(recordType.getFieldNames(), fieldName);
@@ -125,18 +183,18 @@ public class TupleUtils extends StringUtil {
     public static Map<String, Object>[] splitTuple(Map<String, Object> fields, int tupleSize, int maxSize) {
         // Get the min number of splits
         int numSplits = (int) Math.ceil(tupleSize / (double) maxSize);
-        
+
         String parentId = (String) fields.get(KBARecord.FIELD_DOCUMENT_ID);
 
         // Split the body content into numSplits number of parts
         String bodyText = (String) fields.get(KBARecord.FIELD_BODY);
-    
+
         // Get max size of the body text in each split
         int contentSplitSize = (int) Math.ceil(bodyText.length() / (double) numSplits);
-        
+
         String bodyTextSplits[] = breakString(bodyText, contentSplitSize);
         numSplits = bodyTextSplits.length;
-        
+
         // Get smaller tuple splits
         @SuppressWarnings("unchecked")
         Map<String, Object> fieldsSplits[] = new Map[numSplits];
@@ -152,6 +210,7 @@ public class TupleUtils extends StringUtil {
         }
 
         fields.put(KBARecord.FIELD_BODY, bodyTextSplits[0]);
+        fields.put(KBARecord.FIELD_PART, 0);
         fieldsSplits[0] = fields;
 
         return fieldsSplits;
