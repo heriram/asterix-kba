@@ -25,9 +25,6 @@ public class KBAStreamItemProcessor {
     private IAObject[] mutableKBAStreamDocumentFields;
     private AMutableRecord mutableRecord;
 
-    private AMutableString aStringInstance;
-
-    private Map<String, Object> recordFields;
     private ARecordType recordType;
 
     
@@ -37,8 +34,6 @@ public class KBAStreamItemProcessor {
     public KBAStreamItemProcessor(ARecordType recordType, IHyracksTaskContext ctx) {
         this.recordType = recordType;
         IAType fieldTypes[] = recordType.getFieldTypes();
-        
-        aStringInstance = new AMutableString(null);
         
         this.bodyAsArrayList = new ArrayList<>();
 
@@ -72,7 +67,7 @@ public class KBAStreamItemProcessor {
         mutableRecord = new AMutableRecord(recordType, mutableKBAStreamDocumentFields);
     }
     
-    public void getBodyAMutableStringList() {
+    public void getBodyAMutableStringList(Map<String, Object> recordFields) {
         bodyAsArrayList.clear();
         
         String bodyText = ((String) recordFields.get(KBARecord.FIELD_BODY)).trim();
@@ -103,7 +98,7 @@ public class KBAStreamItemProcessor {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private void setListContent(int fieldPos) {
+    private void setListContent(int fieldPos, Map<String, Object> recordFields) {
         Set<String> mentions = (HashSet) recordFields.get(KBARecord.FIELD_MENTIONS);
         if (mentions != null) {
             ((AMutableUnorderedList) mutableKBAStreamDocumentFields[fieldPos]).clear();
@@ -114,18 +109,18 @@ public class KBAStreamItemProcessor {
         mentions = null;
     }
 
-    private void processMainDocument(String fieldNames[]) {
+    private void processMainDocument(String fieldNames[], Map<String, Object> recordFields) {
         IAType fieldTypes[] = recordType.getFieldTypes();
 
         for (int i = 0; i < fieldNames.length; i++) {
 
             switch (fieldTypes[i].getTypeTag()) {
                 case ORDEREDLIST:
-                    getBodyAMutableStringList();
+                    getBodyAMutableStringList(recordFields);
                     ((AMutableOrderedList) mutableKBAStreamDocumentFields[i]).setValues(bodyAsArrayList);
                     break;
                 case UNORDEREDLIST:
-                    setListContent(i);
+                    setListContent(i, recordFields);
                     break;
                 case INT32:
                     int fieldValue = 0;
@@ -147,7 +142,7 @@ public class KBAStreamItemProcessor {
         }
     }
 
-    private void processChildDocument(String fieldNames[]) {
+    private void processChildDocument(String fieldNames[], Map<String, Object> recordFields) {
         IAType fieldTypes[] = recordType.getFieldTypes(); 
         for (int i = 0; i < fieldNames.length; i++) {
             if (fieldNames[i].equals(KBARecord.FIELD_DOCUMENT_ID)) {
@@ -155,7 +150,7 @@ public class KBAStreamItemProcessor {
                         .get(KBARecord.FIELD_DOCUMENT_ID));
                 mutableRecord.setValueAtPos(i, mutableKBAStreamDocumentFields[i]);
             } else if (fieldNames[i].equals(KBARecord.FIELD_BODY)) {
-                getBodyAMutableStringList();
+                getBodyAMutableStringList(recordFields);
                 ((AMutableOrderedList) mutableKBAStreamDocumentFields[i]).setValues(bodyAsArrayList);
                 mutableRecord.setValueAtPos(i, mutableKBAStreamDocumentFields[i]);
             } else if (fieldNames[i].equals(KBARecord.FIELD_PARENT)) {
@@ -185,16 +180,15 @@ public class KBAStreamItemProcessor {
     }
 
     public AMutableRecord processNextStreamDocument(Map<String, Object> streamDocFields, String fieldNames[]) {
-        this.recordFields = streamDocFields;
-
-        if (!this.recordFields.containsKey(KBARecord.FIELD_PARENT)) {
-            processMainDocument(fieldNames);
+        if (!streamDocFields.containsKey(KBARecord.FIELD_PARENT)) {
+            processMainDocument(fieldNames, streamDocFields);
         } else {
-            processChildDocument(fieldNames);
+            processChildDocument(fieldNames, streamDocFields);
         }
         
-        recordFields.clear();
-
+        // Free the space
+        streamDocFields = null;
+    
         return mutableRecord;
     }
 
