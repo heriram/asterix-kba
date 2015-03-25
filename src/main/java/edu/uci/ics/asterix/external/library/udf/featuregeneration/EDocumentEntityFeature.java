@@ -1,6 +1,6 @@
 package edu.uci.ics.asterix.external.library.udf.featuregeneration;
 
-public enum EDocumentEntityFeature {
+public enum EDocumentEntityFeature implements IFeatureEnum {
     MENTIONSTITLE("MentionsTitle"), // # Occurrences in title
     MENTIONSBODY("MentionsBody"), // # Occurrences in body
     MENTIONSANCHOR("MentionsAnchor"), // # Occurrences anchor
@@ -18,10 +18,12 @@ public enum EDocumentEntityFeature {
         this.name = name;
     }
     
+    @Override
     public String getName() {
         return this.name;
     }
     
+    @Override
     public String getType() {
         return NUMERIC_TYPE;
     }

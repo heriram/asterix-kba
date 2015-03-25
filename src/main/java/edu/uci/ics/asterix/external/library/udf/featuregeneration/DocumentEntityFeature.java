@@ -7,6 +7,7 @@ import edu.uci.ics.asterix.common.exceptions.AsterixException;
 import edu.uci.ics.asterix.external.library.IFunctionHelper;
 import edu.uci.ics.asterix.external.library.TopicEntity;
 import edu.uci.ics.asterix.external.library.java.IJObject;
+import edu.uci.ics.asterix.external.library.java.JTypeTag;
 import edu.uci.ics.asterix.external.library.java.JObjects.JDouble;
 import edu.uci.ics.asterix.external.library.java.JObjects.JInt;
 import edu.uci.ics.asterix.external.library.java.JObjects.JOrderedList;
@@ -14,6 +15,7 @@ import edu.uci.ics.asterix.external.library.java.JObjects.JRecord;
 import edu.uci.ics.asterix.external.library.java.JObjects.JString;
 import edu.uci.ics.asterix.external.library.utils.Util;
 import edu.uci.ics.asterix.external.udl.adapter.factory.KBARecord;
+import edu.uci.ics.asterix.om.types.BuiltinType;
 
 public class DocumentEntityFeature extends AbstractFeatureGenerator {
     private EntitySearcher searcher;
@@ -82,6 +84,8 @@ public class DocumentEntityFeature extends AbstractFeatureGenerator {
 
     @Override
     public JRecord getResultRecord(IFunctionHelper functionHelper, Map<String, Integer> fieldPositions) {
+        this.functionHelper = functionHelper;
+        
         // Get the input record from the feed
         JRecord inputRecord = (JRecord) functionHelper.getArgument(0);
 
@@ -125,20 +129,25 @@ public class DocumentEntityFeature extends AbstractFeatureGenerator {
         double fposNorm = bodyLength > 0 ? (double) fpos / bodyLength : 0.0;
         double lposNorm = bodyLength > 0 ? (double) lpos / bodyLength : 0.0;
         double spreadNorm = bodyLength > 0 ? (double) spread / bodyLength : 0.0;
+        
+        JInt newIntField = (JInt) functionHelper
+                .getObject(JTypeTag.INT);
+        
+        JDouble newDoubleField = (JDouble) objectPool.allocate(BuiltinType.ADOUBLE);
 
         // Generate results
         JRecord result = (JRecord) functionHelper.getResultObject();
         try {
             result.setField("doc_id", fields[fieldPositions.get(KBARecord.FIELD_DOCUMENT_ID)]);
-            result.setField(EDocumentEntityFeature.MENTIONSTITLE.getName(), new JInt(nTitle)); // N(D_title, E)
-            result.setField(EDocumentEntityFeature.MENTIONSBODY.getName(), new JInt(nBody)); // N(D_body, E)
-            result.setField(EDocumentEntityFeature.MENTIONSANCHOR.getName(), new JInt(nAnchor)); // N(D_anchor, E)
-            result.setField(EDocumentEntityFeature.FIRSTPOS.getName(), new JInt(fpos)); // FPOS(D, E)
-            result.setField(EDocumentEntityFeature.LASTPOS.getName(), new JInt(lpos)); // LPOS(D, E)
-            result.setField(EDocumentEntityFeature.SPREAD.getName(), new JInt(spread)); // SPR(D, E)
-            result.setField(EDocumentEntityFeature.FIRSTPOSNORM.getName(), new JDouble(fposNorm)); // FPOS_norm(D, E)
-            result.setField(EDocumentEntityFeature.LASTPOSNORM.getName(), new JDouble(lposNorm)); // LPOS_norm(D, E)
-            result.setField(EDocumentEntityFeature.SPREADNORM.getName(), new JDouble(spreadNorm)); // SPR_norm(D, E)
+            result.setField(EDocumentEntityFeature.MENTIONSTITLE.getName(), setValue(JTypeTag.INT, nTitle)); // N(D_title, E)            
+            result.setField(EDocumentEntityFeature.MENTIONSBODY.getName(), setValue(JTypeTag.INT, nBody)); // N(D_body, E)            
+            result.setField(EDocumentEntityFeature.MENTIONSANCHOR.getName(), setValue(JTypeTag.INT, nAnchor)); // N(D_anchor, E)            
+            result.setField(EDocumentEntityFeature.FIRSTPOS.getName(), setValue(JTypeTag.INT, fpos)); // FPOS(D, E)            
+            result.setField(EDocumentEntityFeature.LASTPOS.getName(), setValue(JTypeTag.INT, lpos)); // LPOS(D, E)
+            result.setField(EDocumentEntityFeature.SPREAD.getName(), setValue(JTypeTag.INT, spread)); // SPR(D, E)            
+            result.setField(EDocumentEntityFeature.FIRSTPOSNORM.getName(), setValue(JTypeTag.DOUBLE, fposNorm)); // FPOS_norm(D, E)            
+            result.setField(EDocumentEntityFeature.LASTPOSNORM.getName(), setValue(JTypeTag.DOUBLE, lposNorm)); // LPOS_norm(D, E)            
+            result.setField(EDocumentEntityFeature.SPREADNORM.getName(), setValue(JTypeTag.DOUBLE, spreadNorm)); // SPR_norm(D, E)
 
         } catch (AsterixException e) {
             e.printStackTrace();

@@ -8,15 +8,15 @@ import edu.uci.ics.asterix.common.exceptions.AsterixException;
 import edu.uci.ics.asterix.external.library.IFunctionHelper;
 import edu.uci.ics.asterix.external.library.TopicEntity;
 import edu.uci.ics.asterix.external.library.java.IJObject;
+import edu.uci.ics.asterix.external.library.java.JTypeTag;
 import edu.uci.ics.asterix.external.library.java.JObjects.JInt;
 import edu.uci.ics.asterix.external.library.java.JObjects.JOrderedList;
 import edu.uci.ics.asterix.external.library.java.JObjects.JRecord;
 import edu.uci.ics.asterix.external.library.java.JObjects.JString;
+import edu.uci.ics.asterix.external.library.java.JObjects.JUnorderedList;
 import edu.uci.ics.asterix.external.udl.adapter.factory.KBARecord;
 
 public class RelatedEntityFeature extends AbstractFeatureGenerator {
-    private final String FEATURE_NAMES[] = new String[] { "Related", "RelatedTitle", "RelatedBody", "RelatedAnchor" };
-    private final String FEATURE_TYPES[] = new String[] { "NUMERIC", "NUMERIC", "NUMERIC", "NUMERIC" };
     private Map<String, Set<String>> relatedEntityMap;
 
     private EntitySearcher searcher;
@@ -34,12 +34,12 @@ public class RelatedEntityFeature extends AbstractFeatureGenerator {
 
     @Override
     public String[] getFeatureNames() {
-        return FEATURE_NAMES;
+        return EReltatedEntityFeature.getNames();
     }
 
     @Override
     public String[] getFeatureTypes() {
-        return FEATURE_TYPES;
+        return EReltatedEntityFeature.getTypes();
     }
 
     @Override
@@ -67,6 +67,8 @@ public class RelatedEntityFeature extends AbstractFeatureGenerator {
 
     @Override
     public JRecord getResultRecord(IFunctionHelper functionHelper, Map<String, Integer> fieldPositions) {
+        this.functionHelper = functionHelper;
+        
         // Get the input record from the feed
         JRecord inputRecord = (JRecord) functionHelper.getArgument(0);
 
@@ -85,7 +87,7 @@ public class RelatedEntityFeature extends AbstractFeatureGenerator {
         int numAnchor = 0;
         int numRelated = 0;
 
-        JOrderedList mentionUrlNames = (JOrderedList) fields[fieldPositions.get(KBARecord.FIELD_MENTIONS)];
+        JUnorderedList mentionUrlNames = (JUnorderedList) fields[fieldPositions.get(KBARecord.FIELD_MENTIONS)];
         if (mentionUrlNames != null && !mentionUrlNames.isEmpty()) {
             for (int i = 0; i < mentionUrlNames.size(); i++) {
                 JString mention = (JString) mentionUrlNames.getElement(i);
@@ -96,15 +98,15 @@ public class RelatedEntityFeature extends AbstractFeatureGenerator {
                 numRelated += relatedEntities.size();
             }
         }
-
+        
         // Generate results
         JRecord result = (JRecord) functionHelper.getResultObject();
         try {
             result.setField("doc_id", fields[fieldPositions.get(KBARecord.FIELD_DOCUMENT_ID)]);
-            result.setField("Related", new JInt(numRelated));
-            result.setField("RelatedTitle", new JInt(numTitle));
-            result.setField("RelatedBody", new JInt(numBody));
-            result.setField("RelatedAnchor", new JInt(numAnchor));
+            result.setField(EReltatedEntityFeature.RELATED.getName(), setValue(JTypeTag.INT, numRelated));
+            result.setField(EReltatedEntityFeature.RELATEDTITLE.getName(), setValue(JTypeTag.INT, numTitle));
+            result.setField(EReltatedEntityFeature.RELATEDBODY.getName(), setValue(JTypeTag.INT, numBody));         
+            result.setField(EReltatedEntityFeature.RELATEDANCHOR.getName(), setValue(JTypeTag.INT, numAnchor));
         } catch (AsterixException e) {
             e.printStackTrace();
         }

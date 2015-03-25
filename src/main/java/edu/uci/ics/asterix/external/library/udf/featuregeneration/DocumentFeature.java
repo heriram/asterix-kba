@@ -7,11 +7,14 @@ import edu.uci.ics.asterix.common.exceptions.AsterixException;
 import edu.uci.ics.asterix.external.library.IFunctionHelper;
 import edu.uci.ics.asterix.external.library.TopicEntity;
 import edu.uci.ics.asterix.external.library.java.IJObject;
+import edu.uci.ics.asterix.external.library.java.JTypeTag;
+import edu.uci.ics.asterix.external.library.java.JObjects.JDouble;
 import edu.uci.ics.asterix.external.library.java.JObjects.JInt;
 import edu.uci.ics.asterix.external.library.java.JObjects.JOrderedList;
 import edu.uci.ics.asterix.external.library.java.JObjects.JRecord;
 import edu.uci.ics.asterix.external.library.java.JObjects.JString;
 import edu.uci.ics.asterix.external.udl.adapter.factory.KBARecord;
+import edu.uci.ics.asterix.om.types.BuiltinType;
 
 /**
  * Document features
@@ -74,6 +77,8 @@ public class DocumentFeature extends AbstractFeatureGenerator {
     }
 
     public JRecord getResultRecord(IFunctionHelper functionHelper, Map<String, Integer> fieldPositions) {
+        this.functionHelper = functionHelper;
+        
         // Get the input record from the feed
         JRecord inputRecord = (JRecord) functionHelper.getArgument(0);
 
@@ -100,16 +105,16 @@ public class DocumentFeature extends AbstractFeatureGenerator {
 
         if (language != null && language.equalsIgnoreCase("en"))
             lang = 1;
-
+        
         // Generate results
         JRecord result = (JRecord) functionHelper.getResultObject();
         try {
             result.setField("doc_id", fields[fieldPositions.get(KBARecord.FIELD_DOCUMENT_ID)]);
-            result.setField(EDocumentFeature.LENGTH_TITLE.getName(), new JInt(titleLength));
-            result.setField(EDocumentFeature.LENGTH_BODY.getName(), new JInt(bodyLength));
-            result.setField(EDocumentFeature.LENGTH_ANCHOR.getName(), new JInt(anchorLength));
-            result.setField(EDocumentFeature.SOURCE.getName(), new JInt(source));
-            result.setField(EDocumentFeature.LANGUAGE.getName(), new JInt(lang));
+            result.setField(EDocumentFeature.LENGTH_TITLE.getName(), setValue(JTypeTag.INT, titleLength));
+            result.setField(EDocumentFeature.LENGTH_BODY.getName(), setValue(JTypeTag.INT, bodyLength));
+            result.setField(EDocumentFeature.LENGTH_ANCHOR.getName(), setValue(JTypeTag.INT, anchorLength));
+            result.setField(EDocumentFeature.SOURCE.getName(), setValue(JTypeTag.INT, source));
+            result.setField(EDocumentFeature.LANGUAGE.getName(), setValue(JTypeTag.INT, lang));
         } catch (AsterixException e) {
             e.printStackTrace();
         }

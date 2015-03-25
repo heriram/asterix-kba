@@ -1,6 +1,6 @@
 package edu.uci.ics.asterix.external.library.udf.featuregeneration;
 
-public enum EDocumentFeature {
+public enum EDocumentFeature implements IFeatureEnum {
     LENGTH_TITLE("LengthTitle", "NUMERIC"),
     LENGTH_BODY("LengthBody", "NUMERIC"),
     LENGTH_ANCHOR("LengthAnchor", "NUMERIC"),
@@ -38,10 +38,12 @@ public enum EDocumentFeature {
         return types;
      }
     
+    @Override
     public String getName() {
         return this.fName;
     }
     
+    @Override
     public String getType() {
         return this.fType;
     }
