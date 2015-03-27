@@ -3,6 +3,7 @@ package edu.uci.ics.asterix.external.library.udf.featuregeneration;
 import java.util.HashMap;
 import java.util.Map;
 
+import edu.uci.ics.asterix.external.dataset.adapter.KBARecord;
 import edu.uci.ics.asterix.external.library.IFunctionHelper;
 import edu.uci.ics.asterix.external.library.JTypeObjectFactory;
 import edu.uci.ics.asterix.external.library.TopicEntity;
@@ -15,7 +16,6 @@ import edu.uci.ics.asterix.external.library.java.JObjects.JRecord;
 import edu.uci.ics.asterix.external.library.java.JObjects.JString;
 import edu.uci.ics.asterix.external.library.java.JTypeTag;
 import edu.uci.ics.asterix.external.library.textanalysis.Tokenizer;
-import edu.uci.ics.asterix.external.udl.adapter.factory.KBARecord;
 import edu.uci.ics.asterix.om.types.BuiltinType;
 import edu.uci.ics.asterix.om.types.IAType;
 import edu.uci.ics.asterix.om.util.container.IObjectPool;
@@ -27,7 +27,6 @@ import edu.uci.ics.asterix.om.util.container.ListObjectPool;
  * Abstract class for generating a particular set of features for a given
  * stream_id-urlname pair.
  * 
- * @author Krisztian Balog <krisztian.balog@idi.ntnu.no>
  * @author Heri Ramampiaro <heri@idi.ntnu.no>
  */
 public abstract class AbstractFeatureGenerator {
@@ -66,7 +65,7 @@ public abstract class AbstractFeatureGenerator {
                 break;
             case FLOAT:
             case DOUBLE:
-                newObject = (JDouble) objectPool.allocate(BuiltinType.ADOUBLE);
+                newObject = (JDouble) functionHelper.getObject(JTypeTag.DOUBLE);
                 ((JDouble)newObject).setValue((double)value);
                 break;
             default:

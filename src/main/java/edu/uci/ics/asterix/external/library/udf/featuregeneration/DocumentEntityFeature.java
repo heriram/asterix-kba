@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import edu.uci.ics.asterix.common.exceptions.AsterixException;
+import edu.uci.ics.asterix.external.dataset.adapter.KBARecord;
 import edu.uci.ics.asterix.external.library.IFunctionHelper;
 import edu.uci.ics.asterix.external.library.TopicEntity;
 import edu.uci.ics.asterix.external.library.java.IJObject;
@@ -14,7 +15,6 @@ import edu.uci.ics.asterix.external.library.java.JObjects.JOrderedList;
 import edu.uci.ics.asterix.external.library.java.JObjects.JRecord;
 import edu.uci.ics.asterix.external.library.java.JObjects.JString;
 import edu.uci.ics.asterix.external.library.utils.Util;
-import edu.uci.ics.asterix.external.udl.adapter.factory.KBARecord;
 import edu.uci.ics.asterix.om.types.BuiltinType;
 
 public class DocumentEntityFeature extends AbstractFeatureGenerator {
@@ -130,11 +130,6 @@ public class DocumentEntityFeature extends AbstractFeatureGenerator {
         double lposNorm = bodyLength > 0 ? (double) lpos / bodyLength : 0.0;
         double spreadNorm = bodyLength > 0 ? (double) spread / bodyLength : 0.0;
         
-        JInt newIntField = (JInt) functionHelper
-                .getObject(JTypeTag.INT);
-        
-        JDouble newDoubleField = (JDouble) objectPool.allocate(BuiltinType.ADOUBLE);
-
         // Generate results
         JRecord result = (JRecord) functionHelper.getResultObject();
         try {
