@@ -9,12 +9,12 @@ package org.trec.kba.streamcorpus;
 import org.apache.thrift.scheme.IScheme;
 import org.apache.thrift.scheme.SchemeFactory;
 import org.apache.thrift.scheme.StandardScheme;
-
 import org.apache.thrift.scheme.TupleScheme;
 import org.apache.thrift.protocol.TTupleProtocol;
 import org.apache.thrift.protocol.TProtocolException;
 import org.apache.thrift.EncodingUtils;
 import org.apache.thrift.TException;
+
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.BitSet;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,8 +157,8 @@ public class Language implements org.apache.thrift.TBase<Language, Language._Fie
 
   @Override
   public void clear() {
-    this.code = null;
-    this.name = null;
+    this.code =  StreamItem.EMPTY_STRING;
+    this.name =  StreamItem.EMPTY_STRING;
   }
 
   /**
