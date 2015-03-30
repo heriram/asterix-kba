@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -24,6 +25,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import edu.uci.ics.asterix.external.library.textanalysis.ITokenizer;
+import edu.uci.ics.asterix.external.library.textanalysis.Tokenizer;
+import edu.uci.ics.asterix.external.library.utils.StringUtil;
 import edu.uci.ics.asterix.external.library.utils.TextAnalysis;
 
 //import org.apache.commons.io.IOUtils;
@@ -45,6 +49,17 @@ public class KBATopicEntityLoader {
         }
         return buf.toString();
     }
+    
+    private static String getUrlName(String url) throws UnsupportedEncodingException {
+        String s[] = url.split("/");
+        return URLDecoder.decode(s[s.length - 1].replaceAll("\\(.*\\)", ""), "utf-8");
+    }
+    
+    public static String getAnalyzedName(ITokenizer tokenizer, String name) {
+        String tokens[] = tokenizer.tokenize(name);      
+        return StringUtil.concatenate(tokens, ' ');
+    }
+    
 
     /**
      * Read the topic entities and all related aliases from a JSON file and load them into a list (Map) of
@@ -66,17 +81,17 @@ public class KBATopicEntityLoader {
 
             /* Convert json to a list of doc fields - ie., list of stream docs */
             Iterator<String> it = ejson.keys();
-            TopicEntity topicEntity = null;
             int n = 0;
             while (it.hasNext() && n < max) {
                 String key = it.next();
                 String s[] = key.split("/");
 
-                String urlname = s[s.length - 1]; // Get the url_name only (not the whole URL) 
-
+                String urlname = URLDecoder.decode(s[s.length - 1].replaceAll("\\(.*\\)", ""), "utf-8"); // Get the url_name only (not the whole URL) 
+                String name = urlname.replaceAll("\\(.*\\)", "").replace("_", " ");
                 // Get the name variants
                 JSONArray nv_array = ejson.getJSONArray(key);
                 Set<String> name_variants = new HashSet<String>();
+                name_variants.add(name);
                 for (int i = 0; i < nv_array.length(); i++) {
                     name_variants.add(nv_array.getString(i).toLowerCase());
                 }
@@ -91,7 +106,118 @@ public class KBATopicEntityLoader {
             e.printStackTrace();
         }
         log(topicEntities.size() + " topic entities loaded");
+    }
+    
+    public static class TopicEntity {
+        private String urlName;
+        private Set<String> nameVariants;
+        private ITokenizer tokenizer = Tokenizer.INSTANCE;
+        
+        
+        public TopicEntity(String urlName, Set<String> nameVariants) {
+            this.urlName = urlName;
+            // Save the analyzed version
+            this.nameVariants = nameVariants;
+           
+        }
+        
+        public ITokenizer getTokenizer() {
+            return this.tokenizer;
+        }
+        
+        public void setTokenizer(ITokenizer tokenizer) {
+            this.tokenizer = tokenizer;
+        }
+        
+        public Set<String> getNameVariants() {
+            return this.nameVariants;
+        }
+        
+        /**
+         * Get the analyzed version explicitly if the name variants are not analyzed yet
+         * 
+         * @param urlName
+         * @param analyzedNames
+         */
+        public void getAnalyzedNameVariants(Set<String> analyzedNames) {
+            if (analyzedNames == null) return;
+            
+            if (!analyzedNames.isEmpty())
+                analyzedNames.clear();
+            
+            for (String name: nameVariants) {
+                analyzedNames.add(getAnalyzedName(tokenizer, name));
+            }
+        }
+        
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((urlName == null) ? 0 : urlName.hashCode());
+            return result;
+        }
 
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            
+            TopicEntity other = (TopicEntity) obj;
+            if (urlName == null) {
+                if (other.urlName != null)
+                    return false;
+            } else if (!urlName.equals(other.urlName))
+                return false;
+            
+            return true;
+        }
+        
+    }
+    
+    public static void loadTopicEntities(String pathname, Map<String, Set<String>> topicEntities) {
+        try {
+            InputStream is = new FileInputStream(pathname);
+            ITokenizer tokenizer = Tokenizer.INSTANCE;
+
+            // Load to json object
+            JSONObject ejson = new JSONObject(readInputStreamAsString(is));
+
+            /* Convert json to a list of doc fields - ie., list of stream docs */
+            Iterator<String> it = ejson.keys();
+            int n = 0;
+            while (it.hasNext()) {
+                String key = it.next();
+                String urlname = getUrlName(key); // Get the url_name only (not the whole URL) 
+                String name = urlname.replaceAll("\\(.*\\)", "").replace("_", " ");
+                // Get the name variants
+                JSONArray nv_array = ejson.getJSONArray(key);
+                Set<String> name_variants = new HashSet<String>();
+                name_variants.add(getAnalyzedName(tokenizer, name));
+                for (int i = 0; i < nv_array.length(); i++) {
+                    name_variants.add(getAnalyzedName(tokenizer, nv_array.getString(i)));
+                }
+
+                topicEntities.put(urlname, name_variants);
+                n++;
+
+            }
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error while loading topic entities and name variants");
+            e.printStackTrace();
+        }
+        log(topicEntities.size() + " topic entities loaded");
+    }
+    
+    
+    public static void loadTopicEntities(Map<String, Set<String>> topicEntities) {
+        loadTopicEntities(ENTITY_LOOKUP_FILE, topicEntities);
     }
     
 
@@ -117,25 +243,23 @@ public class KBATopicEntityLoader {
     }
     
     public static void buildNameURLMap(String pathname, Map<String, String> topicEntityURLMap) {
+        ITokenizer tokenizer = Tokenizer.INSTANCE;
         try {
             JSONObject ejson = readJSONFile(pathname);
             /* Convert json to a list of doc fields - ie., list of stream docs */
             Iterator<String> it = ejson.keys();
             while (it.hasNext()) {
                 String key = it.next();
-                String s[] = key.split("/");
-
-                // Get the url_name only (not the whole URL)
-                String urlname = URLDecoder.decode(s[s.length - 1].replaceAll("\\(.*\\)", ""), "utf-8");
-                String name = urlname.replace("_", " ").toLowerCase();  
+                String urlname = getUrlName(key);
+                String name = getAnalyzedName(tokenizer, urlname.replace("_", " "));  
 
                 // Get the name variants
                 JSONArray nv_array = ejson.getJSONArray(key);
-                topicEntityURLMap.put(name, key);
+                topicEntityURLMap.put(getAnalyzedName(tokenizer, name), urlname);
                 
                 for (int i = 0; i < nv_array.length(); i++) {
-                    String nv = nv_array.getString(i).toLowerCase();
-                    topicEntityURLMap.put(nv, key);
+                    String nv = nv_array.getString(i);
+                    topicEntityURLMap.put(getAnalyzedName(tokenizer, nv), urlname);
                 }
 
                 
