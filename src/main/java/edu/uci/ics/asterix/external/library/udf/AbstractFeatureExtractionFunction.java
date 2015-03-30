@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import edu.uci.ics.asterix.external.dataset.adapter.KBARecord;
 import edu.uci.ics.asterix.external.library.IExternalScalarFunction;
 import edu.uci.ics.asterix.external.library.IFunctionHelper;
 import edu.uci.ics.asterix.external.library.KBATopicEntityLoader;
@@ -12,7 +13,6 @@ import edu.uci.ics.asterix.external.library.java.JObjects.JRecord;
 import edu.uci.ics.asterix.external.library.udf.featuregeneration.AbstractFeatureGenerator;
 import edu.uci.ics.asterix.external.library.udf.featuregeneration.EntitySearcher;
 import edu.uci.ics.asterix.external.library.utils.TupleUtils;
-import edu.uci.ics.asterix.external.udl.adapter.factory.KBARecord;
 import edu.uci.ics.asterix.om.types.ARecordType;
 
 public abstract class AbstractFeatureExtractionFunction implements IExternalScalarFunction {

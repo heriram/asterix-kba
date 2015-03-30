@@ -43,13 +43,13 @@ public class DocumentEntityFeature extends AbstractFeatureGenerator {
     @Override
     public String getFeatureVector(KBARecord streamDoc, TopicEntity entity) {
         // field lengths
-        String title = streamDoc.get(KBARecord.FIELD_TITLE);
+        String title = (String) streamDoc.get(KBARecord.FIELD_TITLE);
         int titleMentionPositions[] = searcher.search(title);
 
-        String body = streamDoc.get(KBARecord.FIELD_BODY);
+        String body = (String) streamDoc.get(KBARecord.FIELD_BODY);
         int bodyMentionPositions[] = searcher.search(body);
 
-        String anchor = streamDoc.get(KBARecord.FIELD_ANCHOR);
+        String anchor = (String) streamDoc.get(KBARecord.FIELD_ANCHOR);
         int anchorMentionPositions[] = searcher.search(anchor);
         int bodyLength = tokenizer.tokenize(body).length;
 

@@ -2,13 +2,13 @@ package edu.uci.ics.asterix.external.library.udf;
 
 import java.util.logging.Logger;
 
+import edu.uci.ics.asterix.external.dataset.adapter.KBARecord;
 import edu.uci.ics.asterix.external.library.IExternalScalarFunction;
 import edu.uci.ics.asterix.external.library.IFunctionHelper;
 import edu.uci.ics.asterix.external.library.java.IJObject;
 import edu.uci.ics.asterix.external.library.java.JObjects.JRecord;
 import edu.uci.ics.asterix.external.library.java.JObjects.JString;
 import edu.uci.ics.asterix.external.library.utils.TupleUtils;
-import edu.uci.ics.asterix.external.udl.adapter.factory.KBARecord;
 
 public class KBAChildDocFunction implements IExternalScalarFunction {
     private static final Logger LOGGER = Logger.getLogger(KBAChildDocFunction.class.getName());

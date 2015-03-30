@@ -1,6 +1,6 @@
 package edu.uci.ics.asterix.external.library.utils;
 
-import edu.uci.ics.asterix.external.udl.adapter.factory.KBARecord;
+import edu.uci.ics.asterix.external.dataset.adapter.KBARecord;
 import edu.uci.ics.asterix.feeds.CentralFeedManager;
 
 /**

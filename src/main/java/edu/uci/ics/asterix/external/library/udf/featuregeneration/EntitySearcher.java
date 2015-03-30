@@ -105,6 +105,19 @@ public class EntitySearcher extends AbstractPhraseSearcher {
 
     @Override
     public boolean containMention(String text) {
+        return containMention(text, null, this.mentions);
+
+    }
+    
+    public boolean containMention(String text,  Map<String, String> urlMap) {
+        return containMention(text, urlMap, this.mentions);
+    }
+    
+    public boolean containMention(String text,  Set<String> mentions) {
+        return containMention(text, null, mentions);
+    }
+    
+    public boolean containMention(String text,  Map<String, String> urlMap, Set<String> mentions) {
         mentions.clear();
         String tokens[] = ((Tokenizer) tokenizer).tokenize(text, STOPWORD_REMOVED);
         StringBuilder candidatePhrase = new StringBuilder();
@@ -127,7 +140,11 @@ public class EntitySearcher extends AbstractPhraseSearcher {
 
                     // Check if current token is part of the dictionary
                     if (entityInvertedList.containsPhrase(tokens[t])) {
-                        mentions.add(tokens[t]);
+                        if (urlMap==null)
+                            mentions.add(tokens[t]);
+                        else 
+                            mentions.add(urlMap.get(tokens[t]));
+                        
                         entityPositions[pos] = t;
                         pos++;
                     }
@@ -143,7 +160,10 @@ public class EntitySearcher extends AbstractPhraseSearcher {
                                 count++;
                                 String terms = candidatePhrase.toString();
                                 if (entityInvertedList.containsPhrase(terms)) {
-                                    mentions.add(terms);
+                                    if (urlMap==null)
+                                        mentions.add(terms);
+                                    else 
+                                        mentions.add(urlMap.get(terms));
                                     entityPositions[pos] = t;
                                     pos++;
                                 }
@@ -171,15 +191,11 @@ public class EntitySearcher extends AbstractPhraseSearcher {
 
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            // Help the GC...
-            candidatePhrase = null;
-            tokens = null;
         }
 
         return !mentions.isEmpty();
     }
-
+    
     @Override
     public Set<String> getMentions() {
         return this.mentions;

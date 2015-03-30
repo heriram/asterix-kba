@@ -1,12 +1,15 @@
 package edu.uci.ics.asterix.external.library.utils;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 
-import edu.uci.ics.asterix.external.library.java.IJObject;
+import edu.uci.ics.asterix.external.dataset.adapter.KBARecord;
 import edu.uci.ics.asterix.external.library.java.JObjects.JRecord;
-import edu.uci.ics.asterix.external.udl.adapter.factory.KBARecord;
 import edu.uci.ics.asterix.om.types.ARecordType;
 
 public class TupleUtils extends StringUtil {

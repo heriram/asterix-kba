@@ -503,9 +503,7 @@ public class StringUtil {
         wordCount++;
         String result[] = new String[wordCount];
         System.arraycopy(temp, 0, result, 0, wordCount);
-        
-        del = null;
-        
+                
         return result;
     }
 

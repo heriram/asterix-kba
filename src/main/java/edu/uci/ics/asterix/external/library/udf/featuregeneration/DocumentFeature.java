@@ -46,20 +46,20 @@ public class DocumentFeature extends AbstractFeatureGenerator {
     public String getFeatureVector(KBARecord doc, TopicEntity entity) {
 
         // field lengths
-        String title = doc.get(KBARecord.FIELD_TITLE);
+        String title = (String) doc.get(KBARecord.FIELD_TITLE);
         int titleLength = tokenizer.tokenize(title).length;
-        String body = doc.get(KBARecord.FIELD_BODY);
+        String body = (String) doc.get(KBARecord.FIELD_BODY);
         int bodyLength = tokenizer.tokenize(body).length;
-        int anchorLength = tokenizer.tokenize(doc.get(KBARecord.FIELD_ANCHOR)).length;
+        int anchorLength = tokenizer.tokenize((String) doc.get(KBARecord.FIELD_ANCHOR)).length;
 
         // source
         String src = "?";
-        int source = ESource.getValueOfName(doc.get(KBARecord.FIELD_SOURCE));
+        int source = ESource.getValueOfName((String) doc.get(KBARecord.FIELD_SOURCE));
         if (source!=-1)
             src =  source + "";
 
         // language detection
-        String language = doc.get(KBARecord.FIELD_LANGUAGE);
+        String language = (String) doc.get(KBARecord.FIELD_LANGUAGE);
         String lang = "0";
 
         if (language != null && language.equalsIgnoreCase("EN"))

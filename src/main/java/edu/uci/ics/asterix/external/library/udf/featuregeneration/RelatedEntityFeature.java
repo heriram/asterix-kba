@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Set;
 
 import edu.uci.ics.asterix.common.exceptions.AsterixException;
+import edu.uci.ics.asterix.external.dataset.adapter.KBARecord;
 import edu.uci.ics.asterix.external.library.IFunctionHelper;
 import edu.uci.ics.asterix.external.library.TopicEntity;
 import edu.uci.ics.asterix.external.library.java.IJObject;
@@ -14,7 +15,6 @@ import edu.uci.ics.asterix.external.library.java.JObjects.JOrderedList;
 import edu.uci.ics.asterix.external.library.java.JObjects.JRecord;
 import edu.uci.ics.asterix.external.library.java.JObjects.JString;
 import edu.uci.ics.asterix.external.library.java.JObjects.JUnorderedList;
-import edu.uci.ics.asterix.external.udl.adapter.factory.KBARecord;
 
 public class RelatedEntityFeature extends AbstractFeatureGenerator {
     private Map<String, Set<String>> relatedEntityMap;
@@ -46,9 +46,9 @@ public class RelatedEntityFeature extends AbstractFeatureGenerator {
     public String getFeatureVector(KBARecord streamDoc, TopicEntity entity) {
 
         // use the same analyzer for doc text that we use for entities
-        String title = streamDoc.get(KBARecord.FIELD_TITLE);
-        String body = streamDoc.get(KBARecord.FIELD_BODY);
-        String anchor = streamDoc.get(KBARecord.FIELD_ANCHOR);
+        String title = (String) streamDoc.get(KBARecord.FIELD_TITLE);
+        String body = (String) streamDoc.get(KBARecord.FIELD_BODY);
+        String anchor = (String) streamDoc.get(KBARecord.FIELD_ANCHOR);
 
         Set<String> relatedEntities = entity.getRelatedEntities();
         int numTitle = searcher.numOfMentionedEntities(title, relatedEntities);
