@@ -130,8 +130,7 @@ public class KBAPushBasedStreamFeedClient extends FeedClient {
             
             fieldNames = outputtype.getFieldNames();
 
-            dataProvider = new KBADataProvider(dateHourDirectoryList, doPrefiltering, outputtype, frameSize,
-                    dataInputQueue, chunkReader);
+            dataProvider = new KBADataProvider(dateHourDirectoryList, outputtype, frameSize, dataInputQueue, chunkReader);
 
             this.executorService = executorService;
         }

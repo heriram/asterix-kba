@@ -21,8 +21,8 @@ public class KBADataProvider implements Runnable {
     int numFiles = 0;
     int numHours = 0;
 
-    public KBADataProvider(File[] dateHourDirectoryList, boolean doFiltering, ARecordType outputtype,
-            int maxFrameSize, BlockingQueue<Map<String, Object>> dataInputQueue, KBAFileReader chunkReader) {
+    public KBADataProvider(File[] dateHourDirectoryList, ARecordType outputtype, int maxFrameSize, 
+            BlockingQueue<Map<String, Object>> dataInputQueue, KBAFileReader chunkReader) {
         this.contentProvider = chunkReader;
         this.dateHourDirectoryList = Arrays.asList(dateHourDirectoryList);
         this.numHours = dateHourDirectoryList.length;

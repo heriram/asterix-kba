@@ -17,7 +17,7 @@ import edu.uci.ics.asterix.external.library.utils.StringPool;
 import edu.uci.ics.asterix.external.library.utils.StringUtil;
 import edu.uci.ics.asterix.om.types.ARecordType;
 
-public class KBARecord extends KBAStreamDocument {
+public class KBARecord extends AbstractKBARecord {
 
     @SuppressWarnings("unused")
     private static final long serialVersionUID = 1L;
@@ -25,8 +25,6 @@ public class KBARecord extends KBAStreamDocument {
     private final StringPool stringInterner = StringPool.INSTANCE; 
 
     public Map<String, ContentItem> oc;
-
-    private HashMap<String, Object> fields;
 
     public final static String FIELD_MENTIONS = "mentions";
     public final static String FIELD_PARENT = "parent_id";
@@ -58,7 +56,7 @@ public class KBARecord extends KBAStreamDocument {
         return (bodyText.isEmpty() && title.isEmpty());
     }
 
-    @Override
+    //@Override
     public void initialize(StreamItem streamItem, String dirName) {
         this.dirName = dirName;
         this.docId = UUID.randomUUID().toString();
@@ -141,43 +139,13 @@ public class KBARecord extends KBAStreamDocument {
         return fieldNames;
     }
     
-    private String getLanguage(ContentItem ci) {
-        Language language = ci.getLanguage();
-
-        if (language == null) {
-            return null;
-        }
-
-        if (language.isSetCode())
-            return language.getCode();
-
-        else if (language.isSetName())
-            return language.getName();
-
-        return null;
-    }
 
     public String getDirName() {
         return this.dirName;
     }
 
-    //@Override
     public String getDoc_id() {
         return this.docId;
-    }
-
-    @Override
-    public String getCleanVisible(ContentItem ci) {
-        if (ci == null)
-            return StringUtil.EMPTY_STRING;
-        if (ci.getClean_visible() == null || ci.getClean_visible().length() == 0)
-            return StringUtil.EMPTY_STRING;
-
-        if (ci.getClean_visible().length() > 0) {
-            return stringInterner.manualIntern(StringUtil.cleanText(ci.getClean_visible()));
-        } else {
-            return StringUtil.EMPTY_STRING;
-        }
     }
 
     public String getTitle() {
@@ -212,21 +180,7 @@ public class KBARecord extends KBAStreamDocument {
         this.mentionedEntities.clear();
         fields.clear();
     }
-
-    public boolean containMention(PhraseFinder mentionSearcher) {
-        String content = getContent();
-        if (content.trim().isEmpty())
-            return false;
-        return mentionSearcher.containMention(mentionedEntities, content);
-    }
-
-    public boolean containMention(PhraseFinder mentionSearcher, Map<String, String> urlMap) {
-        String content = getContent();
-        if (content.trim().isEmpty())
-            return false;
-        return mentionSearcher.containMention(urlMap, mentionedEntities, content);
-    }
-    
+ 
     public boolean containMention(EntitySearcher mentionSearcher) {
         String content = getContent();
         if (content.trim().isEmpty())
