@@ -30,10 +30,12 @@ public class TextAnalyzer  {
     private Map<String, Integer> termVector;
     
     private ITokenizer tokenizer;
-    private Term tokens[];
-    private String terms[];
+    private Term terms[];
+    private String tokens[];
     
     private PorterStemmer stemmer;
+    
+    public final static TextAnalyzer INSTANCE = new TextAnalyzer();
     
     public TextAnalyzer() {
         this(Tokenizer.INSTANCE, new PorterStemmer());
@@ -57,12 +59,12 @@ public class TextAnalyzer  {
         return this.tokenizer;
     }
     
-    public Term[] getTokens() {
-        return tokens;
+    public Term[] getTerms() {
+        return terms;
     }
 
-    public String[] getTerms() {
-        return terms;
+    public String[] getTokens() {
+        return tokens;
     }
     
     
@@ -105,47 +107,36 @@ public class TextAnalyzer  {
         maxTf = 0;
         length = 0;
     }
-    
-    /** 
-     * Help the GC
-     */
-    public void deallocate() {
-        terms = null;
-        termVector = null;      
-        tokenizer = null;
-        tokens = null;
-        terms = null;
-    }
-    
+        
     public int getLength() {
         return length;
     }
     
     
     public void analyze(String text) {
-        terms =  tokenizer.tokenize(text);
+        tokens =  tokenizer.tokenize(text);
         reset();
-        length = terms.length;
+        length = tokens.length;
         
-        for(String t: terms) {
+        for(String t: tokens) {
             int f = 1;
-            String term = this.stemmer.stem(t);
+            String token = this.stemmer.stem(t);
             
-            if(termVector.containsKey(term))
-                f += termVector.get(term);
+            if(termVector.containsKey(token))
+                f += termVector.get(token);
             
             if (f>maxTf) 
                 maxTf = f;
             
-            termVector.put(term, f);
+            termVector.put(token, f);
         }
-        tokens = new Term[termVector.size()];
+        terms = new Term[termVector.size()];
         
         Iterator<Entry<String, Integer>> it = termVector.entrySet().iterator();
         int i=0;
         while(it.hasNext()) {
             Entry<String, Integer> e = it.next();  
-            tokens[i] = new Term (e.getKey(), e.getValue());
+            terms[i] = new Term(e.getKey(), e.getValue());
             i++;
         }
     }

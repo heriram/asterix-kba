@@ -3,24 +3,17 @@ package edu.uci.ics.asterix.external.library;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -28,7 +21,6 @@ import org.json.JSONObject;
 import edu.uci.ics.asterix.external.library.textanalysis.ITokenizer;
 import edu.uci.ics.asterix.external.library.textanalysis.Tokenizer;
 import edu.uci.ics.asterix.external.library.utils.StringUtil;
-import edu.uci.ics.asterix.external.library.utils.TextAnalysis;
 
 //import org.apache.commons.io.IOUtils;
 
@@ -365,14 +357,14 @@ public class KBATopicEntityLoader {
 
     }
 
-    public static String[][] loadAnalyzedNameVariants(Analyzer analyzer, String pathname, int max) {
+    public static String[][] loadAnalyzedNameVariants(ITokenizer tokenizer, String pathname, int max) {
         Set<String> nv = new HashSet<String>();
         loadNameVariants(pathname, nv, max);
         Iterator<String> it = nv.iterator();
         String[][] nameVariants = new String[nv.size()][];
         int i = 0;
         while (it.hasNext()) {
-            nameVariants[i] = TextAnalysis.analyze(analyzer, it.next());
+            nameVariants[i] = tokenizer.tokenize(it.next());
             i++;
         }
         return nameVariants;
@@ -386,8 +378,8 @@ public class KBATopicEntityLoader {
      * @return String[][]
      */
 
-    public static String[][] loadNameVariants(Analyzer analyzer) {
-        return loadAnalyzedNameVariants(analyzer, ENTITY_LOOKUP_FILE, Integer.MAX_VALUE);
+    public static String[][] loadNameVariants(ITokenizer tokenizer) {
+        return loadAnalyzedNameVariants(tokenizer, ENTITY_LOOKUP_FILE, Integer.MAX_VALUE);
     }
 
     /**

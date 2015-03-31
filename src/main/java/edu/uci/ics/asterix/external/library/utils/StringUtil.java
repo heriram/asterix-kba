@@ -10,21 +10,19 @@ import java.util.Set;
 public class StringUtil {
     public static final String SPECIAL_CHARACTERS = "`~!#$%^*()_+[\\];'/{}|:\"<>?"; // Keeping . and ,
 
-    public static final char REPEATING_SPACES[] = { '\n', '\r', '\t', ' ' };
+    public static final char WHITE_SPACES[] = { '\n', '\r', '\t', ' ' };
 
     public static final Set<Character> SPECIAL_CHAR_SET = toCharSet(SPECIAL_CHARACTERS);
 
-    public static final Set<Character> REPEATING_SPACE_SET = toCharSet(REPEATING_SPACES);
+    public static final Set<Character> WHITE_SPACES_SET = toCharSet(WHITE_SPACES);
 
     public static final String EMPTY_STRING = "";
 
     public static Set<Character> toCharSet(char charArray[]) {
         Set<Character> charSet = new HashSet<Character>();
-
         for (char c : charArray) {
             charSet.add(c);
         }
-
         return charSet;
     }
 
@@ -140,7 +138,7 @@ public class StringUtil {
                 case '\r':
                 case '\t':
                 case ' ':
-                    if (count > 0 && REPEATING_SPACE_SET.contains(dstStrBuffer[count - 1])) {
+                    if (count > 0 && WHITE_SPACES_SET.contains(dstStrBuffer[count - 1])) {
                         break;
                     }
                 default:
@@ -468,6 +466,12 @@ public class StringUtil {
         }
 
         return new String(asciiBuff).trim();
+    }
+    
+    
+    public static String getNormalizedStringRegex(String originalString) {
+        String asciiText = originalString.replaceAll("[^\\x00-\\x7F]", "").replaceAll("\n", " ");
+        return asciiText.trim();
     }
 
     public static String[] tokenize(String text, String delimiters) {

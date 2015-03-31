@@ -57,7 +57,11 @@ import edu.uci.ics.asterix.om.base.AMutableRecord;
  */
 public class ADMObject {
     public static final Character[] WHITE_SPACES = new Character[] { '\b', '\f', '\t', '\n', '\r', ' ' };
-    public Set<Character> whiteSpaceCharSet;
+    public static Set<Character> whiteSpaceCharSet;
+    static {
+        whiteSpaceCharSet = new HashSet<Character>();
+        whiteSpaceCharSet.addAll(Arrays.asList(WHITE_SPACES));
+    }
 
     /**
      * ADMObject.NULL is equivalent to the value that JavaScript calls null,
@@ -115,8 +119,6 @@ public class ADMObject {
      */
     public ADMObject() {
         this.map = new HashMap<String, Object>();
-        whiteSpaceCharSet = new HashSet<Character>();
-        whiteSpaceCharSet.addAll(Arrays.asList(WHITE_SPACES));
     }
 
     /**
@@ -1187,7 +1189,7 @@ public class ADMObject {
                     escaped.append('\\');
                     escaped.append(c);
                     break;
-                 case '/':
+                case '/':
                     /*if (prev_c == '<') {
                         escaped.append('\\');
                     }*/
@@ -1682,5 +1684,5 @@ public class ADMObject {
             throw new ADMException(exception);
         }
     }
-   
+
 }

@@ -10,9 +10,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Analyzer;
-
-import edu.uci.ics.asterix.external.library.utils.TextAnalysis;
+import edu.uci.ics.asterix.external.library.textanalysis.Tokenizer;
+import edu.uci.ics.asterix.external.library.utils.StringUtil;
 
 /**
  * Represents an input topic entity with id, name, and name variants. Related
@@ -37,14 +36,14 @@ public class TopicEntity {
 
 	private Set<String> relatedEntitiesAnalyzed;
 
-	private Analyzer analyzer;
+	private Tokenizer tokenizer;
 
 	private String text;
 
 	private String[] textAnalyzed;
 
 	public TopicEntity(String urlname) {
-		analyzer = TextAnalysis.getAnalyzer();
+	    tokenizer = Tokenizer.INSTANCE;
 		this.urlname = urlname;
 		nameVariants = new HashSet<String>();
 		nameVariantsAnalyzed = new HashSet<String>();
@@ -110,7 +109,7 @@ public class TopicEntity {
 		// create analyzed version too
 		// we store these as " " separated strings (not as String[]) so that
 		// it's easier to deal with duplicates
-		nameVariantsAnalyzed.add(TextAnalysis.joinText(TextAnalysis.analyze(analyzer, name), ' '));
+		nameVariantsAnalyzed.add(StringUtil.concatenate(tokenizer.tokenize(name), ' '));
 	}
 
 	/**
@@ -148,7 +147,7 @@ public class TopicEntity {
 		// create analyzed version too
 		// we store these as " " separated strings (not as String[]) so that
 		// it's easier to deal with duplicates
-		relatedEntitiesAnalyzed.add(TextAnalysis.joinText(TextAnalysis.analyze(analyzer, name), ' '));
+		relatedEntitiesAnalyzed.add(StringUtil.concatenate(tokenizer.tokenize(name), ' '));
 	}
 
 	/**
@@ -192,8 +191,7 @@ public class TopicEntity {
 
 	public void setText(String text) {
 		this.text = text;
-		this.textAnalyzed = TextAnalysis.analyze(
-				TextAnalysis.getStandardAnalyzer(), text);
+		this.textAnalyzed = tokenizer.tokenize(text);
 	}
 
 	/**
@@ -234,7 +232,7 @@ public class TopicEntity {
 		return nameVariants.size();
 	}
 
-	public Analyzer getAnalyzer() {
-		return analyzer;
+	public Tokenizer getTokenizer() {
+		return tokenizer;
 	}
 }

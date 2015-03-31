@@ -9,11 +9,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Analyzer;
 
 import edu.uci.ics.asterix.external.library.textanalysis.Tokenizer;
 import edu.uci.ics.asterix.external.library.utils.StringUtil;
-import edu.uci.ics.asterix.external.library.utils.TextAnalysis;
 
 public class PhraseFinder {
     private Tokenizer tokenizer;
