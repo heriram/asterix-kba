@@ -9,12 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.lucene.analysis.Analyzer;
-
-import edu.uci.ics.asterix.external.library.utils.TextAnalysis;
+import edu.uci.ics.asterix.external.library.textanalysis.TextAnalyzer;
 
 public class ADMTokenizedString {
-    private final static Analyzer ANALYZER = TextAnalysis.getAnalyzer();
+    private final static TextAnalyzer ANALYZER = TextAnalyzer.INSTANCE;
     private Object tokenCollection = null;
     private String terms[] = null;
 
@@ -32,7 +30,8 @@ public class ADMTokenizedString {
     public ADMTokenizedString(boolean is_analyzed, String txt) {
 
         if (is_analyzed) {
-            this.terms = TextAnalysis.analyze(ANALYZER, txt);
+            ANALYZER.analyze(txt);
+            this.terms = ANALYZER.getAnalyzedTerms();
         } else {
             this.terms = txt.split("\\s");
         }
