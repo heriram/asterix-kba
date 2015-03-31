@@ -1,14 +1,9 @@
 package edu.uci.ics.asterix.external.library.udf;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.apache.lucene.analysis.Analyzer;
 
 import edu.uci.ics.asterix.external.library.IExternalScalarFunction;
 import edu.uci.ics.asterix.external.library.IFunctionHelper;
@@ -20,8 +15,6 @@ import edu.uci.ics.asterix.external.library.java.JObjects.JRecord;
 import edu.uci.ics.asterix.external.library.java.JObjects.JString;
 import edu.uci.ics.asterix.external.library.java.JObjects.JUnorderedList;
 import edu.uci.ics.asterix.external.library.java.JTypeTag;
-import edu.uci.ics.asterix.external.library.utils.StringUtil;
-import edu.uci.ics.asterix.external.library.utils.TextAnalysis;
 
 public class KBAStreamFilteringFunction implements IExternalScalarFunction {
     private static final Logger LOGGER = Logger.getLogger(KBAStreamFilteringFunction.class.getName());
@@ -30,7 +23,6 @@ public class KBAStreamFilteringFunction implements IExternalScalarFunction {
     private Set<String> mentions;
 
     private boolean bodyContentIsList = true;
-    private final Analyzer ANALYZER = TextAnalysis.getAnalyzer();
 
     private PhraseFinder searcher;
 
