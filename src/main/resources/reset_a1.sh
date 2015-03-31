@@ -9,5 +9,7 @@ if [ "$#" -eq  1 ]
 	managix stop -n a1
 	managix install -n a1 -d feeds -l kbalib -p /Users/heri/git/asterix-feed/target/asterix-external-lib-zip-binary-assembly.zip
 	managix start -n a1
+	echo "Copying necessary resource files and directory"
 	cp /Users/heri/git/asterix-feed/src/main/resources/name_variants_lookup.json ${MANAGIX_HOME}/clusters/local/working_dir/
+	cp -r /Users/heri/git/asterix-feed/src/main/resources/profiles ${MANAGIX_HOME}/clusters/local/working_dir/
 fi

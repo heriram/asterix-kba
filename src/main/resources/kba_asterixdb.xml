@@ -2,46 +2,53 @@
 	<language>JAVA</language>
 	<libraryFunctions>
 		<libraryFunction>
+		<function_type>SCALAR</function_type>
+			<name>relatedEntityFeature</name>
+			<arguments>StreamType</arguments>
+			<return_type>RelatedEntityFeatureType</return_type>
+			<definition>edu.uci.ics.asterix.external.library.udf.RelatedEntityFeatureExtractionFunctionFactory</definition>
+		</libraryFunction>
+		<libraryFunction>
 			<function_type>SCALAR</function_type>
 			<name>documentEntityFeature</name>
-			<arguments>InputRecordType</arguments>
+			<arguments>StreamType</arguments>
 			<return_type>DocumentEntityFeatureType</return_type>
-			<definition>edu.uci.ics.asterix.external.library.DocuementEntityFeatureExtractionFunctionFactory</definition>
+			<definition>edu.uci.ics.asterix.external.library.udf.DocuementEntityFeatureExtractionFunctionFactory</definition>
 		</libraryFunction>
 		<libraryFunction>
 			<function_type>SCALAR</function_type>
 			<name>documentFeature</name>
-			<arguments>InputRecordType</arguments>
+			<arguments>StreamType</arguments>
 			<return_type>DocumentFeatureType</return_type>
-			<definition>edu.uci.ics.asterix.external.library.DocumentFeatureExtractionFunctionFactory</definition>
+			<definition>edu.uci.ics.asterix.external.library.udf.DocumentFeatureExtractionFunctionFactory</definition>
 		</libraryFunction>
 		<libraryFunction>
 			<function_type>SCALAR</function_type>
 			<name>hashTags</name>
 			<arguments>Tweet</arguments>
 			<return_type>ProcessedTweet</return_type>
-			<definition>edu.uci.ics.asterix.external.library.HashTagsFunctionFactory</definition>
+			<definition>edu.uci.ics.asterix.external.library.udf.HashTagsFunctionFactory</definition>
 		</libraryFunction>
 		<libraryFunction>
 			<function_type>SCALAR</function_type>
 			<name>streamDocFilter</name>
 			<arguments>InputRecordType</arguments>
 			<return_type>StreamType</return_type>
-			<definition>edu.uci.ics.asterix.external.library.KBAStreamFilteringFunctionFactory</definition>
+			<definition>edu.uci.ics.asterix.external.library.udf.KBAStreamFilteringFunctionFactory</definition>
 		</libraryFunction>
 		<libraryFunction>
 			<function_type>SCALAR</function_type>
 			<name>mainDocLoader</name>
 			<arguments>InputRecordType</arguments>
 			<return_type>StreamType</return_type>
-			<definition>edu.uci.ics.asterix.external.library.KBAStreamMainDocsFunctionFactory</definition>
+			<definition>edu.uci.ics.asterix.external.library.udf.KBAStreamMainDocsFunctionFactory</definition>
 		</libraryFunction>
 		<libraryFunction>
 			<function_type>SCALAR</function_type>
 			<name>childDocLoader</name>
-			<arguments>InputRecordType</arguments>
+			<arguments>StreamType</arguments>
 			<return_type>ChildStreamType</return_type>
-			<definition>edu.uci.ics.asterix.external.library.KBAChildDocFunctionFactory</definition>
+			<definition>edu.uci.ics.asterix.external.library.udf.KBAChildDocFunctionFactory</definition>
 		</libraryFunction>
 	</libraryFunctions>
 	<libraryAdapters>
@@ -51,7 +58,7 @@
 		</libraryAdapter>
 		<libraryAdapter>
 			<name>push_kba_stream_feed</name>
-			<factory_class>edu.uci.ics.asterix.external.udl.adapter.factory.PushBasedKBAStreamAdapterFactory</factory_class>
+			<factory_class>edu.uci.ics.asterix.external.dataset.adapter.PushBasedKBAStreamAdapterFactory</factory_class>
 		</libraryAdapter>
 	</libraryAdapters>
 </externalLibrary>

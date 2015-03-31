@@ -14,6 +14,7 @@ create type InputRecordType as open {
         language: string,
         schost: string,
         mentions: {{string}},
+		part_number: int32,
 		parent: string?
 }
 
@@ -27,6 +28,7 @@ create type StreamType as open {
         anchor_cleansed: string,
         language: string,
         schost: string,
+		part_number: int32,
         mentions: {{string}}
 }
 
@@ -38,7 +40,8 @@ drop type ChildStreamType if exists;
 create type ChildStreamType as open {
         doc_id: string,
 		body_cleansed: [string],
-        parent:string
+        parent:string,
+		part: int32
 }
 create dataset ChildStreamDocuments(ChildStreamType)
 primary key doc_id;
@@ -51,6 +54,9 @@ create secondary feed kbachildfeed from feed kbafeed
 	apply function "kbalib#childDocLoader";
 
 connect feed kbafeed to dataset StreamDocuments;
+connect feed docfeat to dataset DocumentFeatures;
+connect feed docentityfeat to dataset DocumentEntityFeatures;
+connect feed relatedfeat to dataset RelatedEntityFeatures;
 connect feed kbachildfeed to dataset ChildStreamDocuments;
 
 // QUERYING:

@@ -15,7 +15,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import edu.uci.ics.asterix.external.dataset.adapter.KBAStreamFeeder;
+import edu.uci.ics.asterix.external.udl.adapter.factory.KBAStreamFeeder;
 
 
 public class KBAStreamTest {

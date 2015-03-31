@@ -25,6 +25,17 @@ create type DocumentFeatureType as open {
 	    English: int32
 }
 
+create type RelatedEntityFeatureType as open {
+        doc_id: string,
+        Related: int32,
+	    RelatedTitle: int32,
+	    RelatedBody: int32,
+	    RelatedAnchor: int32
+}
+
+create dataset RelatedEntityFeatures(RelatedEntityFeatureType)
+primary key doc_id;
+
 create dataset DocumentFeatures(DocumentFeatureType)
 primary key doc_id;
 
@@ -37,7 +48,8 @@ create secondary feed docfeat from feed kbafeed
 create secondary feed docentityfeat from feed kbafeed
 		apply function "kbalib#documentEntityFeature";
 
-connect feed docfeat to dataset DocumentFeatures;
-connect feed docentityfeat to dataset DocumentEntityFeatures;
+create secondary feed relatedfeat from feed kbafeed
+	apply function "kbalib#relatedEntityFeature";
+
 
 
