@@ -1,9 +1,5 @@
 package edu.uci.ics.asterix.external.library.textsimiliarities;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
 import edu.uci.ics.asterix.external.library.textanalysis.TextAnalyzer;
 
 /**
