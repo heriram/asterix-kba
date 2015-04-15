@@ -17,6 +17,11 @@ public class TupleUtils extends StringUtil {
             KBARecord.FIELD_SOURCE, KBARecord.FIELD_SCHOST, KBARecord.FIELD_TITLE, KBARecord.FIELD_ANCHOR,
             KBARecord.FIELD_LANGUAGE };
 
+    // Make sure this class is never instantiated
+    private TupleUtils() {
+
+    }
+
     /**
      * Compute the size of a tuple to figure out whether it will fit into
      * the Hyracs frame
@@ -112,7 +117,7 @@ public class TupleUtils extends StringUtil {
             // Get the min. number of splits
             int numSplits = (int) Math.ceil(tupleSize / (double) maxTupleSize);
             Map<String, Object> splitMap[] = getTupleSplits(fields, getBodyFieldSplits(fields, numSplits));
-            for(Map<String, Object> tuple: splitMap) {
+            for (Map<String, Object> tuple : splitMap) {
                 dataInputQueue.add(tuple);
             }
         }
@@ -129,7 +134,17 @@ public class TupleUtils extends StringUtil {
     }
 
     public static Map<String, Object>[] getTupleSplits(Map<String, Object> fields, String bodyTextSplits[]) {
-        String parentId = (String) fields.get(KBARecord.FIELD_DOCUMENT_ID);     
+        String parentId = (String) fields.get(KBARecord.FIELD_DOCUMENT_ID);
+        try {
+            if (parentId == null)
+                throw new Exception("Document ID cannot be null");
+
+            if (parentId.isEmpty())
+                throw new Exception("Document ID cannot be empty");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         int numSplits = bodyTextSplits.length;
 
         // Get smaller tuple splits
