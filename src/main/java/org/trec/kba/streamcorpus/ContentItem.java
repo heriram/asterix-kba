@@ -1948,7 +1948,7 @@ Cloneable {
 
         @Override
         public void read(TProtocol iprot, ContentItem struct) throws org.apache.thrift.TException {
-            TField schemeField;
+            TField schemeField=null;
             iprot.readStructBegin();
             while (true) {
                 schemeField = iprot.readFieldBegin();

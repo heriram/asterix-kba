@@ -19,6 +19,11 @@ import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TProtocolUtil;
 import org.apache.thrift.protocol.TMap;
 import org.apache.thrift.protocol.TList;
+import org.apache.thrift.meta_data.FieldValueMetaData;
+import org.apache.thrift.meta_data.FieldMetaData;
+import org.apache.thrift.TFieldRequirementType;
+import org.apache.thrift.meta_data.StructMetaData;
+import org.apache.thrift.meta_data.MapMetaData;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -283,52 +288,39 @@ public class StreamItem implements org.apache.thrift.TBase<StreamItem, StreamIte
     // isset id assignments
     private _Fields optionals[] = { _Fields.ABS_URL, _Fields.SCHOST, _Fields.ORIGINAL_URL, _Fields.SOURCE,
             _Fields.BODY, _Fields.SOURCE_METADATA, _Fields.OTHER_CONTENT, _Fields.RATINGS };
-    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    public static final Map<_Fields, FieldMetaData> metaDataMap;
     static {
-        Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(
-                _Fields.class);
-        tmpMap.put(_Fields.VERSION, new org.apache.thrift.meta_data.FieldMetaData("version",
-                org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.EnumMetaData(
-                        TType.ENUM, Versions.class)));
-        tmpMap.put(_Fields.DOC_ID, new org.apache.thrift.meta_data.FieldMetaData("doc_id",
-                org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.FieldValueMetaData(
-                        TType.STRING)));
-        tmpMap.put(_Fields.ABS_URL, new org.apache.thrift.meta_data.FieldMetaData("abs_url",
-                org.apache.thrift.TFieldRequirementType.OPTIONAL, new org.apache.thrift.meta_data.FieldValueMetaData(
-                        TType.STRING, true)));
-        tmpMap.put(_Fields.SCHOST, new org.apache.thrift.meta_data.FieldMetaData("schost",
-                org.apache.thrift.TFieldRequirementType.OPTIONAL, new org.apache.thrift.meta_data.FieldValueMetaData(
-                        TType.STRING)));
-        tmpMap.put(_Fields.ORIGINAL_URL, new org.apache.thrift.meta_data.FieldMetaData("original_url",
-                org.apache.thrift.TFieldRequirementType.OPTIONAL, new org.apache.thrift.meta_data.FieldValueMetaData(
-                        TType.STRING, true)));
-        tmpMap.put(_Fields.SOURCE, new org.apache.thrift.meta_data.FieldMetaData("source",
-                org.apache.thrift.TFieldRequirementType.OPTIONAL, new org.apache.thrift.meta_data.FieldValueMetaData(
-                        TType.STRING)));
-        tmpMap.put(_Fields.BODY, new org.apache.thrift.meta_data.FieldMetaData("body",
-                org.apache.thrift.TFieldRequirementType.OPTIONAL, new org.apache.thrift.meta_data.StructMetaData(
-                        TType.STRUCT, ContentItem.class)));
-        tmpMap.put(_Fields.SOURCE_METADATA, new org.apache.thrift.meta_data.FieldMetaData("source_metadata",
-                org.apache.thrift.TFieldRequirementType.OPTIONAL, new org.apache.thrift.meta_data.MapMetaData(
-                        TType.MAP, new org.apache.thrift.meta_data.FieldValueMetaData(TType.STRING),
-                        new org.apache.thrift.meta_data.FieldValueMetaData(TType.STRING, "SourceMetadata"))));
-        tmpMap.put(_Fields.STREAM_ID, new org.apache.thrift.meta_data.FieldMetaData("stream_id",
-                org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.FieldValueMetaData(
-                        TType.STRING)));
-        tmpMap.put(_Fields.STREAM_TIME, new org.apache.thrift.meta_data.FieldMetaData("stream_time",
-                org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.StructMetaData(
-                        TType.STRUCT, StreamTime.class)));
-        tmpMap.put(_Fields.OTHER_CONTENT, new org.apache.thrift.meta_data.FieldMetaData("other_content",
-                org.apache.thrift.TFieldRequirementType.OPTIONAL, new org.apache.thrift.meta_data.MapMetaData(
-                        TType.MAP, new org.apache.thrift.meta_data.FieldValueMetaData(TType.STRING),
-                        new org.apache.thrift.meta_data.StructMetaData(TType.STRUCT, ContentItem.class))));
-        tmpMap.put(_Fields.RATINGS, new org.apache.thrift.meta_data.FieldMetaData("ratings",
-                org.apache.thrift.TFieldRequirementType.OPTIONAL, new org.apache.thrift.meta_data.MapMetaData(
-                        TType.MAP, new org.apache.thrift.meta_data.FieldValueMetaData(TType.STRING, "AnnotatorID"),
-                        new org.apache.thrift.meta_data.ListMetaData(TType.LIST,
-                                new org.apache.thrift.meta_data.StructMetaData(TType.STRUCT, Rating.class)))));
+        Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
+        tmpMap.put(_Fields.VERSION, new FieldMetaData("version", TFieldRequirementType.DEFAULT,
+                new org.apache.thrift.meta_data.EnumMetaData(TType.ENUM, Versions.class)));
+        tmpMap.put(_Fields.DOC_ID, new FieldMetaData("doc_id", TFieldRequirementType.DEFAULT, new FieldValueMetaData(
+                TType.STRING)));
+        tmpMap.put(_Fields.ABS_URL, new FieldMetaData("abs_url", TFieldRequirementType.OPTIONAL,
+                new FieldValueMetaData(TType.STRING, true)));
+        tmpMap.put(_Fields.SCHOST, new FieldMetaData("schost", TFieldRequirementType.OPTIONAL, new FieldValueMetaData(
+                TType.STRING)));
+        tmpMap.put(_Fields.ORIGINAL_URL, new FieldMetaData("original_url", TFieldRequirementType.OPTIONAL,
+                new FieldValueMetaData(TType.STRING, true)));
+        tmpMap.put(_Fields.SOURCE, new FieldMetaData("source", TFieldRequirementType.OPTIONAL, new FieldValueMetaData(
+                TType.STRING)));
+        tmpMap.put(_Fields.BODY, new FieldMetaData("body", TFieldRequirementType.OPTIONAL, new StructMetaData(
+                TType.STRUCT, ContentItem.class)));
+        tmpMap.put(_Fields.SOURCE_METADATA, new FieldMetaData("source_metadata", TFieldRequirementType.OPTIONAL,
+                new MapMetaData(TType.MAP, new FieldValueMetaData(TType.STRING), new FieldValueMetaData(TType.STRING,
+                        "SourceMetadata"))));
+        tmpMap.put(_Fields.STREAM_ID, new FieldMetaData("stream_id", TFieldRequirementType.DEFAULT,
+                new FieldValueMetaData(TType.STRING)));
+        tmpMap.put(_Fields.STREAM_TIME, new FieldMetaData("stream_time", TFieldRequirementType.DEFAULT,
+                new StructMetaData(TType.STRUCT, StreamTime.class)));
+        tmpMap.put(_Fields.OTHER_CONTENT, new FieldMetaData("other_content", TFieldRequirementType.OPTIONAL,
+                new MapMetaData(TType.MAP, new FieldValueMetaData(TType.STRING), new StructMetaData(TType.STRUCT,
+                        ContentItem.class))));
+        tmpMap.put(_Fields.RATINGS, new FieldMetaData("ratings", TFieldRequirementType.OPTIONAL,
+                new MapMetaData(TType.MAP, new FieldValueMetaData(TType.STRING, "AnnotatorID"),
+                        new org.apache.thrift.meta_data.ListMetaData(TType.LIST, new StructMetaData(TType.STRUCT,
+                                Rating.class)))));
         metaDataMap = Collections.unmodifiableMap(tmpMap);
-        org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(StreamItem.class, metaDataMap);
+        FieldMetaData.addStructMetaDataMap(StreamItem.class, metaDataMap);
     }
 
     public StreamItem() {
@@ -1594,19 +1586,22 @@ public class StreamItem implements org.apache.thrift.TBase<StreamItem, StreamIte
 
     private static class StreamItemStandardScheme extends StandardScheme<StreamItem> {
         public static StreamItemStandardScheme INSTANCE = new StreamItemStandardScheme();
-        
+
         private StreamItemStandardScheme() {
             System.out.println("StreamItemStandardScheme initialized");
         }
 
         @Override
         public void read(TProtocol iprot, StreamItem struct) throws org.apache.thrift.TException {
+            TField schemeField = null;
+            
             struct.clear();
             
             iprot.readStructBegin();
 
             while (true) {
-                TField schemeField = iprot.readFieldBegin();
+                schemeField = iprot.readFieldBegin();
+                
                 if (schemeField.type == TType.STOP) {
                     break;
                 }
