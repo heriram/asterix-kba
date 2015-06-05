@@ -16,6 +16,8 @@ public class EntitySearcher extends AbstractPhraseSearcher {
 
     private int entityPositions[];
 
+    private Map<String, Integer> urlnameCounts;
+
     public EntitySearcher(String[] phrases) {
         this(Arrays.asList(phrases));
     }
@@ -23,17 +25,17 @@ public class EntitySearcher extends AbstractPhraseSearcher {
     public EntitySearcher(Collection<String> phrases) {
         this.tokenizer = Tokenizer.INSTANCE;
         entityInvertedList = new EntityInvertedList(phrases, tokenizer);
-        //buildInvertedList(phrases, tokenizer);
         mentions = new HashSet<String>();
-
+        urlnameCounts = new HashMap<String, Integer>();
     }
 
     public int numOfMentionedEntities(String text, Set<String> nameSet) {
         // Get the subinverted list for this group of names
-        Map <String, Set<Posting>> subInvertedList= entityInvertedList.getSubInvertedList(nameSet);
-        
-        if (nameSet == null || subInvertedList == null)
+        Map<String, Set<Posting>> subInvertedList = entityInvertedList.getSubInvertedList(nameSet);
+
+        if (nameSet == null || subInvertedList == null) {
             return 0; //TODO Alternatively we could throw an exception here.
+        }
 
         String tokens[] = ((Tokenizer) tokenizer).tokenize(text, STOPWORD_REMOVED);
         StringBuilder candidatePhrase = new StringBuilder();
@@ -94,12 +96,7 @@ public class EntitySearcher extends AbstractPhraseSearcher {
 
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            // Help the GC...
-            candidatePhrase = null;
-            tokens = null;
         }
-
         return mentions.size();
     }
 
@@ -108,21 +105,32 @@ public class EntitySearcher extends AbstractPhraseSearcher {
         return containMention(text, null, this.mentions);
 
     }
-    
-    public boolean containMention(String text,  Map<String, String> urlMap) {
+
+    public boolean containMention(String text, Map<String, String> urlMap) {
         return containMention(text, urlMap, this.mentions);
     }
-    
-    public boolean containMention(String text,  Set<String> mentions) {
+
+    public boolean containMention(String text, Set<String> mentions) {
         return containMention(text, null, mentions);
     }
     
-    public boolean containMention(String text,  Map<String, String> urlMap, Set<String> mentions) {
+    private void updateUrlnameCounts(String urlName) {
+        int count = 1;
+        if (urlnameCounts.containsKey(urlName)) {
+            count += urlnameCounts.get(urlName);
+        } 
+        
+        urlnameCounts.put(urlName, count);
+    }
+
+    public boolean containMention(String text, Map<String, String> urlMap, Set<String> mentions) {
         mentions.clear();
+        urlnameCounts.clear();
+
         String tokens[] = ((Tokenizer) tokenizer).tokenize(text, STOPWORD_REMOVED);
         StringBuilder candidatePhrase = new StringBuilder();
+        int positions[] = new int[tokens.length];
 
-        entityPositions = new int[tokens.length];
         int pos = 0;
 
         try {
@@ -140,12 +148,14 @@ public class EntitySearcher extends AbstractPhraseSearcher {
 
                     // Check if current token is part of the dictionary
                     if (entityInvertedList.containsPhrase(tokens[t])) {
-                        if (urlMap==null)
+                        if (urlMap == null) {
                             mentions.add(tokens[t]);
-                        else 
+                        } else {
                             mentions.add(urlMap.get(tokens[t]));
-                        
-                        entityPositions[pos] = t;
+                            updateUrlnameCounts(urlMap.get(tokens[t]));
+                        }
+
+                        positions[pos] = t;
                         pos++;
                     }
 
@@ -160,11 +170,13 @@ public class EntitySearcher extends AbstractPhraseSearcher {
                                 count++;
                                 String terms = candidatePhrase.toString();
                                 if (entityInvertedList.containsPhrase(terms)) {
-                                    if (urlMap==null)
+                                    if (urlMap == null) {
                                         mentions.add(terms);
-                                    else 
+                                    } else {
                                         mentions.add(urlMap.get(terms));
-                                    entityPositions[pos] = t;
+                                        updateUrlnameCounts(urlMap.get(terms));
+                                    }
+                                    positions[pos] = t;
                                     pos++;
                                 }
                             } else {
@@ -193,9 +205,19 @@ public class EntitySearcher extends AbstractPhraseSearcher {
             e.printStackTrace();
         }
 
-        return !mentions.isEmpty();
+        if (!mentions.isEmpty()) {
+            entityPositions = new int[pos];
+            System.arraycopy(positions, 0, entityPositions, 0, pos);
+            return true;
+        }
+
+        return false;
     }
-    
+       
+    public int getMentionCount(String urlName) {
+        return this.urlnameCounts.get(urlName);
+    }
+
     @Override
     public Set<String> getMentions() {
         return this.mentions;
@@ -203,8 +225,9 @@ public class EntitySearcher extends AbstractPhraseSearcher {
 
     @Override
     public int[] search(String text) {
-        if (containMention(text))
+        if (containMention(text)) {
             return entityPositions;
+        }
         return null;
     }
 

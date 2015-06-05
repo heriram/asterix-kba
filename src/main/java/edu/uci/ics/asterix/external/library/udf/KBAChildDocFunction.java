@@ -36,25 +36,24 @@ public class KBAChildDocFunction implements IExternalScalarFunction {
         this.docIdPosition = TupleUtils.getFieldPosByName(inputRecord, KBARecord.FIELD_DOCUMENT_ID);
         this.parentIdPosition = TupleUtils.getFieldPosByName(inputRecord, KBARecord.FIELD_PARENT);
         this.bodyTextPosition = TupleUtils.getFieldPosByName(inputRecord, KBARecord.FIELD_BODY);
-        
+
         int pnp = TupleUtils.getFieldPosByName(inputRecord, KBARecord.FIELD_PART);
-        if (pnp>-1)
+        if (pnp > -1)
             this.partNumberPosition = pnp;
     }
 
     private boolean isAChildDocument(IJObject fields[]) {
         // Contain parent field?
-        if (parentIdPosition == -1) 
+        if (parentIdPosition == -1)
             return false;
-        
+
         if (fields[parentIdPosition] == null)
             return false;
 
         String parent = ((JString) fields[parentIdPosition]).getValue();
-        
+
         return (parent != null && !parent.isEmpty());
     }
-
 
     @Override
     public void evaluate(IFunctionHelper functionHelper) throws Exception {
@@ -63,18 +62,16 @@ public class KBAChildDocFunction implements IExternalScalarFunction {
 
         // Get the fields
         IJObject[] fields = inputRecord.getFields();
-
-        JRecord result = (JRecord) functionHelper.getResultObject();
-        result.setField("doc_id", fields[docIdPosition]);
-        result.setField("body_cleansed", fields[bodyTextPosition]);
-        result.setField("part_number", fields[partNumberPosition]);
         if (isAChildDocument(fields)) {
+            JRecord result = (JRecord) functionHelper.getResultObject();
+            result.setField("doc_id", fields[docIdPosition]);
+            result.setField("body_cleansed", fields[bodyTextPosition]);
+            result.setField("part_number", fields[partNumberPosition]);
+
             result.setField("parent_id", fields[parentIdPosition]);
             LOGGER.info("Trying to insert: " + ((JString) fields[docIdPosition]).getValue());
-        } 
-        
-        functionHelper.setResult(result);
-           
+            functionHelper.setResult(result);
+        }
     }
 
 }

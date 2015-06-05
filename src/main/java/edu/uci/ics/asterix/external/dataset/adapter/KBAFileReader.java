@@ -65,7 +65,7 @@ public class KBAFileReader {
 
     public void readChunk(File inputfile, String dirName, boolean verbose) throws Exception {
         if (!initialized) {
-            LOGGER.log(Level.SEVERE, "Not initialized. Please run initialize() first.");
+            LOGGER.log(Level.SEVERE, "File reader not initialized properly. Please run initialize() first.");
             return;
         }
 

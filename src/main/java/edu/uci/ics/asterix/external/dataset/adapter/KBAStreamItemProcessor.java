@@ -1,10 +1,18 @@
 package edu.uci.ics.asterix.external.dataset.adapter;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import edu.uci.ics.asterix.external.dataset.adapter.AbstractKBARecord.KBAFields;
+import edu.uci.ics.asterix.external.library.AMutableObjectFactory;
+import edu.uci.ics.asterix.external.library.JTypeObjectFactory;
+import edu.uci.ics.asterix.external.library.java.IJObject;
+import edu.uci.ics.asterix.external.library.java.JTypeTag;
+import edu.uci.ics.asterix.external.library.java.JObjects.JNull;
 import edu.uci.ics.asterix.external.library.utils.StringUtil;
 import edu.uci.ics.asterix.om.base.AMutableInt16;
 import edu.uci.ics.asterix.om.base.AMutableInt32;
@@ -17,9 +25,12 @@ import edu.uci.ics.asterix.om.base.IAObject;
 import edu.uci.ics.asterix.om.types.AOrderedListType;
 import edu.uci.ics.asterix.om.types.ARecordType;
 import edu.uci.ics.asterix.om.types.ATypeTag;
+import edu.uci.ics.asterix.om.types.AUnionType;
 import edu.uci.ics.asterix.om.types.AUnorderedListType;
 import edu.uci.ics.asterix.om.types.BuiltinType;
 import edu.uci.ics.asterix.om.types.IAType;
+import edu.uci.ics.asterix.om.util.container.IObjectPool;
+import edu.uci.ics.asterix.om.util.container.ListObjectPool;
 import edu.uci.ics.hyracks.api.context.IHyracksTaskContext;
 
 public class KBAStreamItemProcessor {
@@ -27,13 +38,22 @@ public class KBAStreamItemProcessor {
     private IAObject[] mutableKBAStreamDocumentFields;
     private AMutableRecord mutableRecord;
 
+    private final IObjectPool<IAObject, IAType> objectPool = new ListObjectPool<IAObject, IAType>(
+            AMutableObjectFactory.INSTANCE);
+
     private ARecordType recordType;
+    
+    private Map<String, Integer> positionMap;
+
 
     ArrayList<IAObject> bodyAsArrayList;
 
     public KBAStreamItemProcessor(ARecordType recordType, IHyracksTaskContext ctx) {
         this.recordType = recordType;
         IAType fieldTypes[] = recordType.getFieldTypes();
+        
+        this.positionMap = new HashMap<>();
+        String fieldNames[] = recordType.getFieldNames();
 
         this.bodyAsArrayList = new ArrayList<>();
 
@@ -41,6 +61,8 @@ public class KBAStreamItemProcessor {
         int length = fieldTypes.length; //Math.max(fieldNames.length, fieldTypes.length);
 
         for (int i = 0; i < length; i++) {
+            positionMap.put(fieldNames[i], i);
+            
             switch (fieldTypes[i].getTypeTag()) {
                 case ORDEREDLIST: // For the body content
                     mutableKBAStreamDocumentFields[i] = new AMutableOrderedList((AOrderedListType) fieldTypes[i]);
@@ -67,6 +89,13 @@ public class KBAStreamItemProcessor {
         mutableRecord = new AMutableRecord(recordType, mutableKBAStreamDocumentFields);
     }
 
+    private AMutableString allocateString(String value) {
+        AMutableString retValue = (AMutableString) objectPool.allocate(BuiltinType.ASTRING);
+        retValue.setValue(value);
+
+        return retValue;
+    }
+
     public void reset() {
         for (int i = 0; i < mutableKBAStreamDocumentFields.length; i++) {
             switch (mutableKBAStreamDocumentFields[i].getType().getTypeTag()) {
@@ -83,20 +112,22 @@ public class KBAStreamItemProcessor {
                     break;
             }
         }
+
+        objectPool.reset();
     }
 
     public void getBodyAMutableStringList(Map<String, Object> recordFields) {
-        bodyAsArrayList.clear();
-
+        AMutableString aString = null;
         String bodyText = ((String) recordFields.get(KBARecord.FIELD_BODY)).trim();
         int len = bodyText.length();
         int maxLen = UTF8_STRING_SIZE_LIMIT / 2;
-        AMutableString mutableString = new AMutableString(null);
+
+        bodyAsArrayList.clear();
 
         // If short enough do nothing
         if (len <= maxLen) {
-            mutableString.setValue(bodyText);
-            bodyAsArrayList.add(mutableString);
+            aString = allocateString(bodyText);
+            bodyAsArrayList.add(aString);
             return;
         }
 
@@ -106,13 +137,15 @@ public class KBAStreamItemProcessor {
 
         while (endIndex < len) {
             endIndex = Math.min(StringUtil.lastIndexOf(bodyText, beginIndex, endIndex, ' '), len - 1);
-            mutableString.setValue(bodyText.substring(beginIndex, endIndex));
-            bodyAsArrayList.add(mutableString);
+            aString = allocateString(bodyText.substring(beginIndex, endIndex));
+            bodyAsArrayList.add(aString);
+
             beginIndex = endIndex + 1;
             endIndex = beginIndex + maxLen - 2;
         }
-        mutableString.setValue(bodyText.substring(beginIndex, len));
-        bodyAsArrayList.add(mutableString);
+
+        aString = allocateString(bodyText.substring(beginIndex, len));
+        bodyAsArrayList.add(aString);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -161,39 +194,46 @@ public class KBAStreamItemProcessor {
         }
     }
 
-    private void processChildDocument(String fieldNames[], Map<String, Object> recordFields) {
+    private void processChildDocument(Map<String, Object> recordFields) {
         IAType fieldTypes[] = recordType.getFieldTypes();
-        for (int i = 0; i < fieldNames.length; i++) {
-            if (fieldNames[i].equals(KBARecord.FIELD_DOCUMENT_ID)) {
-                ((AMutableString) mutableKBAStreamDocumentFields[i]).setValue((String) recordFields
-                        .get(KBARecord.FIELD_DOCUMENT_ID));
-                mutableRecord.setValueAtPos(i, mutableKBAStreamDocumentFields[i]);
-            } else if (fieldNames[i].equals(KBARecord.FIELD_BODY)) {
-                getBodyAMutableStringList(recordFields);
-                ((AMutableOrderedList) mutableKBAStreamDocumentFields[i]).setValues(bodyAsArrayList);
-                mutableRecord.setValueAtPos(i, mutableKBAStreamDocumentFields[i]);
-            } else if (fieldNames[i].equals(KBARecord.FIELD_PARENT)) {
-                ((AMutableString) mutableKBAStreamDocumentFields[i]).setValue((String) recordFields
-                        .get(KBARecord.FIELD_PARENT));
-                mutableRecord.setValueAtPos(i, mutableKBAStreamDocumentFields[i]);
-            } else if (fieldNames[i].equals(KBARecord.FIELD_PART)) {
-                ((AMutableInt32) mutableKBAStreamDocumentFields[i]).setValue((Integer) recordFields
-                        .get(KBARecord.FIELD_PART));
-                mutableRecord.setValueAtPos(i, mutableKBAStreamDocumentFields[i]);
+       
+        Object fieldValue = null;
 
-            } else {
-                switch (fieldTypes[i].getTypeTag()) {
-                    case UNORDEREDLIST: // For the mentionlist
-                        mutableKBAStreamDocumentFields[i] = new AMutableUnorderedList(new AUnorderedListType(
-                                BuiltinType.ASTRING, "UNORDEREDLIST"));
-                        break;
+        Set<String> recordFieldNames = recordFields.keySet();
 
-                    default:
-                        mutableKBAStreamDocumentFields[i] = new AMutableString("");
+        for (String fieldName : recordFieldNames) {         
+            int pos = positionMap.get(fieldName);           
+            fieldValue = recordFields.get(fieldName);
+           
+            ATypeTag typeTag = fieldTypes[pos].getTypeTag();
+            switch (typeTag) {
+                case STRING:
+                    ((AMutableString) mutableKBAStreamDocumentFields[pos]).setValue((String) fieldValue);
+                    break;
+                case ORDEREDLIST: // Assumes FIELD_BODY
+                    getBodyAMutableStringList(recordFields);
+                    ((AMutableOrderedList) mutableKBAStreamDocumentFields[pos]).setValues(bodyAsArrayList);
+                    break;
+                case INT32: // Assumes FIELD_PART
+                    ((AMutableInt32) mutableKBAStreamDocumentFields[pos]).setValue((Integer) fieldValue);
+                    break;
+                case UNORDEREDLIST: // Assumes FIELD_MENTIONS
+                    mutableKBAStreamDocumentFields[pos] = new AMutableUnorderedList(new AUnorderedListType(
+                            BuiltinType.ASTRING, "UNORDEREDLIST"));
+                    break;
+                case UNION:
+                    if (fieldName.equals(KBARecord.FIELD_PARENT)) {
+                        ((AMutableString) mutableKBAStreamDocumentFields[pos]).setValue((String) fieldValue);
                         break;
-                }
-                mutableRecord.setValueAtPos(i, mutableKBAStreamDocumentFields[i]);
+                    }
+                default:
+                    try {
+                        throw new Exception("Unsupported field type: " + typeTag);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } 
             }
+            mutableRecord.setValueAtPos(pos, mutableKBAStreamDocumentFields[pos]);
         }
 
     }
@@ -205,7 +245,7 @@ public class KBAStreamItemProcessor {
         if (!streamDocFields.containsKey(KBARecord.FIELD_PARENT)) {
             processMainDocument(fieldNames, streamDocFields);
         } else {
-            processChildDocument(fieldNames, streamDocFields);
+            processChildDocument(streamDocFields);
         }
 
         // Free the space

@@ -50,6 +50,27 @@
 			<return_type>ChildStreamType</return_type>
 			<definition>edu.uci.ics.asterix.external.library.udf.KBAChildDocFunctionFactory</definition>
 		</libraryFunction>
+		<libraryFunction>
+			<function_type>SCALAR</function_type>
+			<name>appendFields</name>
+			<arguments>InputRecordType,AppendRecordType</arguments>
+			<return_type>OutputRecordType</return_type>
+		    <definition>edu.uci.ics.asterix.tools.RecordFieldAppenderFunctionFactory</definition>
+		</libraryFunction>
+		<libraryFunction>
+			<function_type>SCALAR</function_type>
+			<name>removeFields</name>
+			<arguments>InputRecordType,FieldsToRemoveType</arguments>
+			<return_type>OutputRecordType</return_type>
+		    <definition>edu.uci.ics.asterix.tools.RecordFieldRemoverFactory</definition>
+		</libraryFunction>
+		<libraryFunction>
+			<function_type>SCALAR</function_type>
+			<name>debugFields</name>
+			<arguments>InputRecordType</arguments>
+			<return_type>FieldCategoriesType</return_type>
+		    <definition>edu.uci.ics.asterix.tools.RecordDebugFunctionFactory</definition>
+		</libraryFunction>
 	</libraryFunctions>
 	<libraryAdapters>
 		<libraryAdapter>

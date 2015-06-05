@@ -40,6 +40,12 @@
 			<artifactId>commons-io</artifactId>
 			<version>2.4</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+			<version>3.4.1</version>
+		</dependency>
+		
 		<!-- <dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
@@ -94,7 +100,12 @@
 			<scope>system</scope>
 			<systemPath>${local.library}/langdetect.jar</systemPath>
 		</dependency>
-	
+		<dependency>
+  			<!-- jsoup HTML parser library @ http://jsoup.org/ -->
+ 			<groupId>org.jsoup</groupId>
+  			<artifactId>jsoup</artifactId>
+  			<version>1.8.2</version>
+		</dependency>
 		<!--
 		<dependency>
 			<groupId>edu.uci.ics.asterix</groupId>

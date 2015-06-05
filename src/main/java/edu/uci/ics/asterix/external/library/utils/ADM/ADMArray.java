@@ -50,8 +50,8 @@ import java.util.Map;
  * <code>null</code>.</li>
  * </ul>
  *
- * @author ADM.org
- * @version 2014-05-03
+ * @author AsterixDB team
+ * @version 2015-03-31
  */
 abstract public class ADMArray {
 

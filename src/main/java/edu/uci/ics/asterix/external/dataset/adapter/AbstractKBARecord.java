@@ -37,7 +37,7 @@ public abstract class AbstractKBARecord {
     public final static String FIELD_PARENT = "parent_id";
     public final static String FIELD_PART = "part_number";
 
-    /**
+    /**        
      * Field names and types + positions
      * doc_id: string,
      * stream_id: string,

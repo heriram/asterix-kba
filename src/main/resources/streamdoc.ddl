@@ -15,7 +15,7 @@ create type InputRecordType as open {
         schost: string,
         mentions: {{string}},
 		part_number: int32,
-		parent: string?
+		parent_id: string?
 }
 
 create type StreamType as open {
@@ -29,6 +29,7 @@ create type StreamType as open {
         language: string,
         schost: string,
 		part_number: int32,
+		parent_id: string?,
         mentions: {{string}}
 }
 

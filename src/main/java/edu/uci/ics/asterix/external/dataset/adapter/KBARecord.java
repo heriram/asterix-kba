@@ -53,7 +53,8 @@ public class KBARecord extends AbstractKBARecord {
     }
 
     public boolean isEmpty() {
-        return (bodyText.isEmpty() && title.isEmpty());
+        
+        return (bodyText.trim().isEmpty() && title.trim().isEmpty());
     }
 
     //@Override

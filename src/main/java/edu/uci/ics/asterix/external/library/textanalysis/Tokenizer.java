@@ -93,7 +93,7 @@ public class Tokenizer extends AbstractTokenizer implements ITokenizer {
     }
 
     public static void main(String[] args) {
-        ITokenizer lexer = SMTokenizer.INSTANCE;
+        ITokenizer lexer = Tokenizer.INSTANCE;
         String test = "@johnsmith: this is a test of this new tokenizer. It won't be bad if it works as good.";
         String text =  "Thermodynamic Geometry, Phase Transitions,"+
                 "and the Widom Line"+

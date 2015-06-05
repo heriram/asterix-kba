@@ -26,14 +26,14 @@ public class TupleUtils extends StringUtil {
      * Compute the size of a tuple to figure out whether it will fit into
      * the Hyracs frame
      * 
-     * @param tupleMap
+     * @param tupleAsMap
      *            The {@link HashMap} representation of the tuple
      * @return
      *         The size of the tuple (int)
      */
     @SuppressWarnings("unchecked")
-    public static int getTupleSize(Map<String, Object> tupleMap) {
-        Iterator<Object> it = tupleMap.values().iterator();
+    public static int getTupleSize(Map<String, Object> tupleAsMap) {
+        Iterator<Object> it = tupleAsMap.values().iterator();
 
         int size = 0;
         while (it.hasNext()) {
