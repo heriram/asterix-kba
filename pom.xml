@@ -9,9 +9,9 @@
 	<name>asterix-feed</name>
 	<url>http://maven.apache.org</url>
 	<properties>
-		<local.asterix.dir>/Users/heri/Work/Workspace/Experimental/asterix_feeds/asterixdb</local.asterix.dir>
-		<managix.home>/Users/heri/asterix-mgmt</managix.home>
-		<local.library>/Users/heri/git/asterix-feed/lib</local.library>
+		<local.asterix.dir>${ASTERIX_SOURCE}</local.asterix.dir>
+		<managix.home>${env.MANAGIX_HOME}</managix.home>
+		<local.library>${project.basedir}/lib</local.library>
 	</properties>
 	<dependencies>
 		<dependency>
