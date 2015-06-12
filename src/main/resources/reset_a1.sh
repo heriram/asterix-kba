@@ -22,7 +22,7 @@ EOF
 RESTART=false
 STOP=false
 INSTALL_LIB=false
-ASTERIX_SOURCE=/Users/heri/git/asterix-feed
+SOURCE=/Users/heri/git/asterix-feed
 
 if [[ $# <  1 ]]
 then
@@ -64,8 +64,8 @@ case $key in
     shift # past argument
     ;;
     -s|--asterixsrc)
-    ASTERIX_SOURCE="$2"
-    if [ -z $ASTERIX_SOURCE ]
+    SOURCE="$2"
+    if [ -z $SOURCE ]
     then
     	usage
     	exit 1
@@ -99,7 +99,7 @@ fi
 
 #echo INSTANCE_NAME  = "${INSTANCE_NAME}"
 #echo MANAGIX_HOME PATH     = "${MANAGIX_HOME}"
-#echo ASTERIX_SOURCE PATH    = "${ASTERIX_SOURCE}"
+#echo SOURCE PATH    = "${SOURCE}"
 #echo INSTALL_LIB = "${INSTALL_LIB}"
 
 echo "Resetting asterix instance  ${INSTANCE_NAME}"
@@ -111,10 +111,14 @@ if [ $INSTALL_LIB = true ]
    then
  	echo "Installing new libs (Adapters and exterenal functions)"
 	${MANAGIX_HOME}/bin/managix stop -n a1
-	${MANAGIX_HOME}/bin/managix install -n a1 -d feeds -l kbalib -p ${ASTERIX_SOURCE}/target/asterix-external-lib-zip-binary-assembly.zip
+	${MANAGIX_HOME}/bin/managix install -n a1 -d feeds -l kbalib -p ${SOURCE}/target/asterix-external-lib-zip-binary-assembly.zip
 	${MANAGIX_HOME}/bin/managix start -n a1
 	echo "Copying necessary resource files and directory"
-	cp ${ASTERIX_SOURCE}/src/main/resources/name_variants_lookup.json ${MANAGIX_HOME}/clusters/local/working_dir/
-	cp -r ${ASTERIX_SOURCE}/src/main/resources/profiles ${MANAGIX_HOME}/clusters/local/working_dir/
+	echo "Copy ${SOURCE}/src/main/resources/name_variants_lookup.json to ${MANAGIX_HOME}/clusters/local/working_dir/"
+	cp ${SOURCE}/src/main/resources/name_variants_lookup.json ${MANAGIX_HOME}/clusters/local/working_dir/
+	echo "Copy ${SOURCE}/src/main/resources/config.properties to ${MANAGIX_HOME}/clusters/local/working_dir/"
+	cp ${SOURCE}/src/main/resources/config.properties ${MANAGIX_HOME}/clusters/local/working_dir/
+	echo "Copy ${SOURCE}/src/main/resources/profiles to ${MANAGIX_HOME}/clusters/local/working_dir/"
+	cp -r ${SOURCE}/src/main/resources/profiles ${MANAGIX_HOME}/clusters/local/working_dir/
 fi
 

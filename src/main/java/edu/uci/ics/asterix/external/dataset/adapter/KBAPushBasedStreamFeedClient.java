@@ -56,7 +56,7 @@ public class KBAPushBasedStreamFeedClient extends FeedClient {
     private static Map<String, String> entityURLMap;
 
     private static EntitySearcher mentionSearcher;
-    private static LanguageDetector languageDetector;
+    private static final LanguageDetector languageDetector = new LanguageDetector();
 
     public KBAPushBasedStreamFeedClient(IHyracksTaskContext ctx, ARecordType recordType,
             PushBasedKBAStreamAdapter adapter) throws AsterixException {
@@ -80,8 +80,6 @@ public class KBAPushBasedStreamFeedClient extends FeedClient {
                 : new ArrayBlockingQueue<Map<String, Object>>(DEFAULT_BATCH_SIZE);
 
         String corpusDirectoryName = adapter.getDirectoryFromSplit();
-
-        languageDetector = new LanguageDetector();
 
         streamDocServer = new KBAStreamServer(configuration, corpusDirectoryName, recordType, ctx.getFrameSize(),
                 dataInputQueue, executorService);

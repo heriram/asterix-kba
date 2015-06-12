@@ -1,5 +1,7 @@
 package edu.uci.ics.asterix.external.library.utils;
 
+import edu.uci.ics.asterix.tools.ConfigurationHandler;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
@@ -8,7 +10,7 @@ import java.util.Set;
 
 public class KBACorpusFiles {
 
-    public static String DEFAULT_CORPUS = "/Users/heri/git/asterixdb/AsterixDB-KBA/corpus";
+    public static String DEFAULT_CORPUS = ConfigurationHandler.INSTANCE.getProp("data-corpus");
     // Matching dir names like 2011-10-23-20
     public static final String DATE_HOUR_DIRNAME_PATTERN = "^(20\\d\\d)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])-([01][0-9]|2[0-3])$";
 

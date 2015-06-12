@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import edu.uci.ics.asterix.tools.ConfigurationHandler;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -32,7 +33,7 @@ import edu.uci.ics.asterix.external.util.TwitterUtil.AuthenticationConstants;
 
 public class WikipediaPageDownloader {
     private static final Logger LOGGER = Logger.getLogger(WikipediaPageDownloader.class.getName());
-    private final String topicFile = "/Users/heri/asterix-mgmt/clusters/local/working_dir/name_variants_lookup.json"; //KBATopicEntityLoader.ENTITY_LOOKUP_FILE; 
+    private final String topicFile = KBATopicEntityLoader.ENTITY_LOOKUP_FILE;
     private List<String> entityUrlList;
     private Twitter twitter;
 

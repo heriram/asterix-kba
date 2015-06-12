@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 import com.cybozu.labs.langdetect.Detector;
 import com.cybozu.labs.langdetect.DetectorFactory;
 import com.cybozu.labs.langdetect.LangDetectException;
+import edu.uci.ics.asterix.tools.ConfigurationHandler;
 
 /**
  * Detects the language for a given text. Must be initialized by calling
@@ -18,13 +19,15 @@ import com.cybozu.labs.langdetect.LangDetectException;
 
 public class LanguageDetector {
 
-    private final String DEFAULT_LANG_PROFILE_DIR = System.getProperty("user.dir") + "/profiles";
+    private static final String DEFAULT_LANG_PROFILE_DIR = ConfigurationHandler.INSTANCE.getProp("working-dir") +
+            "/" + ConfigurationHandler.INSTANCE.getProp("language-profiles");
     private static final Logger LOGGER = Logger.getLogger(LanguageDetector.class.getName());
 
     public LanguageDetector() {
         try {
             // Get the current base directory
             //File directory = new File(DEFAULT_LANG_PROFILE_DIR);
+            System.out.print("Language profile path: "+ DEFAULT_LANG_PROFILE_DIR);
             this.init(DEFAULT_LANG_PROFILE_DIR);
 
         } catch (LangDetectException e) {
@@ -124,7 +127,7 @@ public class LanguageDetector {
                         + "for arbeidet med leseb�kene. Forn�yelsesparken Kardemomme by i Kristiansand Dyrepark ble �pnet i 1991, og vil i 2014 bli supplert av "
                         + "en �Hakkebakkeskog�." };
 
-        LanguageDetector ld = new LanguageDetector("/Users/heri/asterix-mgmt/clusters/local/working_dir/profiles");
+        LanguageDetector ld = new LanguageDetector(DEFAULT_LANG_PROFILE_DIR);
         long time = System.currentTimeMillis();
         System.out.println("The language for text " + 1 + " is: Engish? " + ld.isEnglish(text[1]));
         assert (ld.isEnglish(text[1]) == false);
