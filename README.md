@@ -1,6 +1,8 @@
-# asterix-kba
+# Asterix-kba
 Development of KBA-based UDFs and External feeds for AsterixDB
 This project is for developing Knowledge Base Acceleration modules using AsterixDB @ UC Irvine as a platform
+
+This code requires jdk 7 or newer to compile/build.
 
 ## Maven
 To run import in Eclipse, run the following first:
@@ -28,6 +30,6 @@ The above script will copy `reset_a1.sh` script into `${MANAGIX_HOME}` (or to wh
 
 When you have made any changes on the asterix-kba code, you can run `reset_a1.sh` as follows:
 
-	./reset_a1.sh -a /Users/username/Work/Asterix/asterixdb-kba -n a1
+	../reset_a1.sh -n a1 -i -s /Users/username/Work/Asterix/asterix-kba -m /Users/username/asterix_mgnt
 
 For help run `reset_a1.sh -h`
