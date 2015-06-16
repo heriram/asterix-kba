@@ -15,3 +15,8 @@ To build the package so that you can load the externa library you need to run th
 	
 After this is finished, the created assemby zip-file can be loaded to Asterix 
 (see also Asterix external library usage for more information)
+
+## Reinstalling a new Managix
+When you have made any changes on the AsterixDB code, you can run the (`reinstall_asterix.sh`)[https://github.com/heriram/asterix-kba/blob/master/reinstall_asterix.sh] script as, e.g., follows:
+
+	./reinstall_asterix.sh -m /Users/username/asterix-mgnt -o -s /Users/username/Work/Asterix/incubator-asterixdb -d 	/Users/username/Work/Asterix/asterix-kba -v 0.8.6
