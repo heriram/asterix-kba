@@ -20,3 +20,14 @@ After this is finished, the created assemby zip-file can be loaded to Asterix
 When you have made any changes on the AsterixDB code, you can run the [`reinstall_asterix.sh`](https://github.com/heriram/asterix-kba/blob/master/reinstall_asterix.sh) script as, e.g., follows:
 
 	./reinstall_asterix.sh -m /Users/username/asterix-mgnt -o -s /Users/username/Work/Asterix/incubator-asterixdb -d 	/Users/username/Work/Asterix/asterix-kba -v 0.8.6
+
+For usage, run `reinstall_asterix.sh -h`
+
+## Updates on External Adapters or UDFs
+The above script will copy `reset_a1.sh` script into `${MANAGIX_HOME}` (or to where you intalled managix) which you can use to re-update the external libraries etc.
+
+When you have made any changes on the asterix-kba code, you can run `reset_a1.sh` as follows:
+
+	./reset_a1.sh -a /Users/username/Work/Asterix/incubator-asterixdb -n a1
+
+For help run `reset_a1.sh -h`
