@@ -111,8 +111,8 @@ cd ${MANAGIX_HOME}
 unzip asterix-installer-${VERSION}-SNAPSHOT-binary-assembly.zip
 cp ${ASTERIX_EXTERNAL_DEV_RESOURCES}/reset_a1.sh ./
 ${MANAGIX_HOME}/bin/managix configure
-cp ${ASTERIX_EXTERNAL_DEV_RESOURCES}/AsterixManagement/asterix-configuration.xml ./conf
-cp ${ASTERIX_EXTERNAL_DEV_RESOURCES}/AsterixManagement/local.xml ./clusters/local/
+#cp ${ASTERIX_EXTERNAL_DEV_RESOURCES}/AsterixManagement/asterix-configuration.xml ./conf
+#cp ${ASTERIX_EXTERNAL_DEV_RESOURCES}/AsterixManagement/local.xml ./clusters/local/
 
 echo "Cleaning up"
 rm asterix-installer-${VERSION}-SNAPSHOT-binary-assembly.zip
