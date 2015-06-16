@@ -89,6 +89,11 @@ public class KBADataGenerator {
         public KBAStreamDocument next() {                   
             return streamItemListIterator.next();
         }
+        
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
 
     }
 
