@@ -10,7 +10,7 @@ OPTIONS:
    -o               Optional - run maven offline to avoid downloading "xml" metadata files (same as mvn -o)
    -c|--clean       Optional - run clean before building the package
    -m|--managixdir  Managix directory (default: ${MANAGIX_HOME})
-   -a|--asterixsrc  Asterix source code directory
+   -s|--asterixsrc  Asterix source code directory
    -d|--asterixdev  Home directory for external feed adapters and UDF development
    -v|--version     Asterix version (default: ${VERSION})
 
