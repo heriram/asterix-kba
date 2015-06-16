@@ -28,6 +28,6 @@ The above script will copy `reset_a1.sh` script into `${MANAGIX_HOME}` (or to wh
 
 When you have made any changes on the asterix-kba code, you can run `reset_a1.sh` as follows:
 
-	./reset_a1.sh -a /Users/username/Work/Asterix/incubator-asterixdb -n a1
+	./reset_a1.sh -a /Users/username/Work/Asterix/asterixdb-kba -n a1
 
 For help run `reset_a1.sh -h`
