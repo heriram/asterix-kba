@@ -103,16 +103,16 @@ fi
 #echo INSTALL_LIB = "${INSTALL_LIB}"
 
 echo "Resetting asterix instance  ${INSTANCE_NAME}"
-${MANAGIX_HOME}/bin/managix stop -n a1
-${MANAGIX_HOME}/bin/managix delete -n a1
-${MANAGIX_HOME}/bin/managix create -n a1 -c ${MANAGIX_HOME}/clusters/local/local.xml
+${MANAGIX_HOME}/bin/managix stop -n ${INSTANCE_NAME}
+${MANAGIX_HOME}/bin/managix delete -n ${INSTANCE_NAME}
+${MANAGIX_HOME}/bin/managix create -n ${INSTANCE_NAME} -c ${MANAGIX_HOME}/clusters/local/local.xml
 
 if [ $INSTALL_LIB = true ]
    then
  	echo "Installing new libs (Adapters and exterenal functions)"
-	${MANAGIX_HOME}/bin/managix stop -n a1
-	${MANAGIX_HOME}/bin/managix install -n a1 -d feeds -l kbalib -p ${SOURCE}/target/asterix-external-lib-zip-binary-assembly.zip
-	${MANAGIX_HOME}/bin/managix start -n a1
+	${MANAGIX_HOME}/bin/managix stop -n ${INSTANCE_NAME}
+	${MANAGIX_HOME}/bin/managix install -n ${INSTANCE_NAME} -d feeds -l kbalib -p ${SOURCE}/target/asterix-external-lib-zip-binary-assembly.zip
+	${MANAGIX_HOME}/bin/managix start -n ${INSTANCE_NAME}
 	echo "Copying necessary resource files and directory"
 	echo "Copy ${SOURCE}/src/main/resources/name_variants_lookup.json to ${MANAGIX_HOME}/clusters/local/working_dir/"
 	cp ${SOURCE}/src/main/resources/name_variants_lookup.json ${MANAGIX_HOME}/clusters/local/working_dir/
