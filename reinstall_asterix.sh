@@ -10,17 +10,17 @@ OPTIONS:
    -o               Optional - run maven offline to avoid downloading "xml" metadata files (same as mvn -o)
    -c|--clean       Optional - run clean before building the package
    -m|--managixdir  Managix directory (default: ${MANAGIX_HOME})
-   -a|--asterixsrc  Asterix source code directory
+   -s|--asterixsrc  Asterix source code directory
    -d|--asterixdev  Home directory for external feed adapters and UDF development
    -v|--version     Asterix version (default: ${VERSION})
 
-   Example: ./reinstall_asterix.sh -m /Users/heri/asterix-master-mgmt -s
-         /Users/heri/Work/Workspace/incubator-asterixdb -d /Users/heri/git/asterix-feed -o -v 0.8.7
+   Example: ./reinstall_asterix.sh -m /Users/username/asterix-mgnt -o -s /Users/username/Work/Asterix/incubator-asterixdb
+      -d /Users/username/Work/Asterix/asterix-kba -v 0.8.6
 EOF
 }
 
-ASTERIX_SOURCE=/Users/heri/Work/Workspace/Experimental/asterix_feeds/asterixdb
-ASTERIX_EXTERNAL_DEV_HOME=/Users/heri/git/asterix-feed
+ASTERIX_SOURCE=
+ASTERIX_EXTERNAL_DEV_HOME=
 ONLINE=
 CLEAN=
 VERSION=0.8.6
@@ -57,8 +57,8 @@ case $key in
     shift # past argument
     ;;
     -d|--asterixdev)
-    ASTERIX_DEV_HOME="$2"
-    if [ -z ASTERIX_DEV_HOME ]
+    ASTERIX_EXTERNAL_DEV_HOME="$2"
+    if [ -z $ASTERIX_EXTERNAL_DEV_HOME ]
     then
     	usage
     	exit 1
@@ -111,8 +111,8 @@ cd ${MANAGIX_HOME}
 unzip asterix-installer-${VERSION}-SNAPSHOT-binary-assembly.zip
 cp ${ASTERIX_EXTERNAL_DEV_RESOURCES}/reset_a1.sh ./
 ${MANAGIX_HOME}/bin/managix configure
-cp ${ASTERIX_EXTERNAL_DEV_RESOURCES}/AsterixManagement/asterix-configuration.xml ./conf
-cp ${ASTERIX_EXTERNAL_DEV_RESOURCES}/AsterixManagement/local.xml ./clusters/local/
+#cp ${ASTERIX_EXTERNAL_DEV_RESOURCES}/AsterixManagement/asterix-configuration.xml ./conf
+#cp ${ASTERIX_EXTERNAL_DEV_RESOURCES}/AsterixManagement/local.xml ./clusters/local/
 
 echo "Cleaning up"
 rm asterix-installer-${VERSION}-SNAPSHOT-binary-assembly.zip

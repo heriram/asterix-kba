@@ -16,7 +16,7 @@ OPTIONS:
    -n name	Name of Asterix instance
    -i      	Optional - used to install external library (optional)
    -m managixdir   Managix directory
-   -a asterixsrc   Asterix source code directory
+   -s asterixsrc   Asterix source code directory
 EOF
 }
 RESTART=false
