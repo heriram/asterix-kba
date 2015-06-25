@@ -103,9 +103,9 @@ fi
 #echo INSTALL_LIB = "${INSTALL_LIB}"
 
 echo "Resetting asterix instance  ${INSTANCE_NAME}"
-managix stop -n a1
-managix delete -n a1
-managix create -n a1 -c ${MANAGIX_HOME}/clusters/local/local.xml
+${MANAGIX_HOME}/bin/managix stop -n a1
+${MANAGIX_HOME}/bin/managix delete -n a1
+${MANAGIX_HOME}/bin/managix create -n a1 -c ${MANAGIX_HOME}/clusters/local/local.xml
 
 if [ $INSTALL_LIB = true ]
    then
