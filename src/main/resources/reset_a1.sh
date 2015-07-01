@@ -23,6 +23,7 @@ RESTART=false
 STOP=false
 INSTALL_LIB=false
 SOURCE=/Users/heri/git/asterix-feed
+REMOVE=false
 
 if [[ $# <  1 ]]
 then
@@ -40,6 +41,9 @@ case $key in
     ;;
     stop)
     STOP=true
+    ;;
+    remove)
+    REMOVE=true
     ;;
     -n|--name)
     INSTANCE_NAME="$2"
@@ -94,6 +98,14 @@ fi
 if [ ${STOP} = true ]
 then
 ${MANAGIX_HOME}/bin/managix stop -n ${INSTANCE_NAME}
+exit 0
+fi
+
+if [ ${REMOVE} = true ]
+then
+${MANAGIX_HOME}/bin/managix stop -n ${INSTANCE_NAME}
+${MANAGIX_HOME}/bin/managix delete -n ${INSTANCE_NAME}
+${MANAGIX_HOME}/bin/managix shutdown
 exit 0
 fi
 

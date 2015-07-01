@@ -1,5 +1,12 @@
 package edu.uci.ics.asterix.external.library;
 
+import edu.uci.ics.asterix.external.library.textanalysis.ITokenizer;
+import edu.uci.ics.asterix.external.library.textanalysis.Tokenizer;
+import edu.uci.ics.asterix.external.library.utils.StringUtil;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
@@ -13,14 +20,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import edu.uci.ics.asterix.external.library.textanalysis.ITokenizer;
-import edu.uci.ics.asterix.external.library.textanalysis.Tokenizer;
-import edu.uci.ics.asterix.external.library.utils.StringUtil;
 
 //import org.apache.commons.io.IOUtils;
 
@@ -127,8 +126,7 @@ public class KBATopicEntityLoader {
         
         /**
          * Get the analyzed version explicitly if the name variants are not analyzed yet
-         * 
-         * @param urlName
+         *
          * @param analyzedNames
          */
         public void getAnalyzedNameVariants(Set<String> analyzedNames) {
@@ -318,8 +316,6 @@ public class KBATopicEntityLoader {
      * 
      * @param pathname
      *            path name of the JSON file containing the name variants
-     * @param topicEntities
-     *            the map to where the names and the aliases should be loaded
      * @param max
      *            the max number of entities to be read
      */
@@ -373,8 +369,7 @@ public class KBATopicEntityLoader {
     /**
      * Read all topic entities and all related aliases from a JSON file (default file)
      * and load them into a list (set) of name variants - pre-analyze the names for performance
-     * 
-     * @param analyzer
+     *
      * @return String[][]
      */
 
@@ -386,7 +381,7 @@ public class KBATopicEntityLoader {
      * Read all topic entities and all related aliases from a JSON file (default file)
      * and load them into a list (set) of name variants
      * 
-     * @param topicEntities
+     * @param name_variants
      *            the set to where the names variants will be loaded
      */
     public static void loadNameVariants(Set<String> name_variants) {

@@ -14,6 +14,22 @@
  */
 package edu.uci.ics.asterix.external.dataset.adapter;
 
+import edu.uci.ics.asterix.common.feeds.api.IFeedAdapter;
+import edu.uci.ics.asterix.external.library.utils.BufferedStreamWriter;
+import edu.uci.ics.asterix.external.library.utils.KBAAdmStreamDocument;
+import edu.uci.ics.asterix.external.library.utils.KBACorpusFiles;
+import edu.uci.ics.asterix.om.types.ARecordType;
+import edu.uci.ics.asterix.runtime.operators.file.AsterixTupleParserFactory;
+import edu.uci.ics.hyracks.api.context.IHyracksTaskContext;
+import edu.uci.ics.hyracks.dataflow.std.file.ITupleParserFactory;
+import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.transport.TIOStreamTransport;
+import org.apache.thrift.transport.TTransport;
+import org.apache.thrift.transport.TTransportException;
+import org.trec.kba.streamcorpus.StreamItem;
+import org.tukaani.xz.XZInputStream;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,23 +45,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TBinaryProtocol;
-import org.apache.thrift.transport.TIOStreamTransport;
-import org.apache.thrift.transport.TTransport;
-import org.apache.thrift.transport.TTransportException;
-import org.trec.kba.streamcorpus.StreamItem;
-import org.tukaani.xz.XZInputStream;
-
-import edu.uci.ics.asterix.common.feeds.api.IFeedAdapter;
-import edu.uci.ics.asterix.external.library.utils.BufferedStreamWriter;
-import edu.uci.ics.asterix.external.library.utils.KBAAdmStreamDocument;
-import edu.uci.ics.asterix.external.library.utils.KBACorpusFiles;
-import edu.uci.ics.asterix.om.types.ARecordType;
-import edu.uci.ics.asterix.runtime.operators.file.AsterixTupleParserFactory;
-import edu.uci.ics.hyracks.api.context.IHyracksTaskContext;
-import edu.uci.ics.hyracks.dataflow.std.file.ITupleParserFactory;
 
 /**
  * Adapter class for creating @see{KBAStreamGeneratorAdapter}.
@@ -74,7 +73,7 @@ public class KBAStreamGeneratorAdapter extends StreamBasedAdapter implements IFe
             ARecordType outputtype, int partition, IHyracksTaskContext ctx) throws Exception {
         super(parserFactory, outputtype, ctx, partition);
         configureDateHourDirectories(configuration, partition);
-        this.streamDocServer = new KBAStreamServer(dateHourDirectoryList, partition, outputtype, ctx.getFrameSize(),
+        this.streamDocServer = new KBAStreamServer(dateHourDirectoryList, partition, outputtype, ctx.getInitialFrameSize(),
                 outputStream, executorService);
     }
 

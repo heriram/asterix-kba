@@ -24,6 +24,7 @@ ASTERIX_EXTERNAL_DEV_HOME=
 ONLINE=
 CLEAN=
 VERSION=0.8.6
+INSTANCE=a1
 
 while [[ $# > 0 ]]
 do
@@ -90,12 +91,9 @@ ASTERIX_EXTERNAL_DEV_RESOURCES=${ASTERIX_EXTERNAL_DEV_HOME}/src/main/resources
 
 echo ASTERIX_EXTERNAL_DEV_RESOURCES = ${ASTERIX_EXTERNAL_DEV_RESOURCES}
 echo ASTERIX_SOURCE = ${ASTERIX_SOURCE}
-echo "MAVEN = mvn clean && mvn ${ONLINE} package -DskipTests"
+echo "MAVEN = mvn clean && mvn ${ONLINE} install -DskipTests"
 echo VERSION = ${VERSION}
 #exit 1
-
-${MANAGIX_HOME}/bin/managix stop -n a1
-${MANAGIX_HOME}/bin/managix delete -n a1
 
 echo "Cleaning up"
 rm -rf ${MANAGIX_HOME}/*
@@ -103,7 +101,7 @@ rm -rf ${MANAGIX_HOME}/.*
 
 echo "Recompiling Asterix"
 cd ${ASTERIX_SOURCE}
-mvn clean && mvn ${ONLINE} package -DskipTests
+mvn clean && mvn ${ONLINE} install -DskipTests
 
 echo "Installing new Asterix Copy"
 cp ${ASTERIX_SOURCE}/asterix-installer/target/asterix-installer-${VERSION}-SNAPSHOT-binary-assembly.zip ${MANAGIX_HOME}/
@@ -112,7 +110,7 @@ unzip asterix-installer-${VERSION}-SNAPSHOT-binary-assembly.zip
 cp ${ASTERIX_EXTERNAL_DEV_RESOURCES}/reset_a1.sh ./
 ${MANAGIX_HOME}/bin/managix configure
 #cp ${ASTERIX_EXTERNAL_DEV_RESOURCES}/AsterixManagement/asterix-configuration.xml ./conf
-#cp ${ASTERIX_EXTERNAL_DEV_RESOURCES}/AsterixManagement/local.xml ./clusters/local/
+cp ${ASTERIX_EXTERNAL_DEV_RESOURCES}/AsterixManagement/local.xml ${MANAGIX_HOME}/clusters/local/
 
 echo "Cleaning up"
 rm asterix-installer-${VERSION}-SNAPSHOT-binary-assembly.zip

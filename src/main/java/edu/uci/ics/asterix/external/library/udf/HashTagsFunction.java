@@ -50,7 +50,7 @@ public class HashTagsFunction implements IExternalScalarFunction {
 			}
 		}
 
-		JRecord result = (JRecord) functionHelper.getResultObject();
+		/*JRecord result = (JRecord) functionHelper.getResultObject();
 		result.setField("tweetid", inputRecord.getFields()[0]);
 		result.setField("user", inputRecord.getFields()[1]);
 		result.setField("location_lat", inputRecord.getFields()[2]);
@@ -58,7 +58,16 @@ public class HashTagsFunction implements IExternalScalarFunction {
 		result.setField("send_time", inputRecord.getFields()[4]);
 		result.setField("message_text", inputRecord.getFields()[5]);
 		result.setField("topics", list);
-
+		*/
+		JRecord result = (JRecord) functionHelper.getResultObject();
+		result.setField("id", inputRecord.getFields()[0]);
+		result.setField("user_name", inputRecord.getFields()[1]);
+		result.setField("latitude", inputRecord.getFields()[2]);
+		result.setField("longitude", inputRecord.getFields()[3]);
+		result.setField("created_at", inputRecord.getFields()[4]);
+		result.setField("message_text", inputRecord.getFields()[5]);
+		result.setField("country", inputRecord.getFields()[7]);
+		result.setField("topics", list);
 		functionHelper.setResult(result);
 	}
 

@@ -14,6 +14,16 @@
  */
 package edu.uci.ics.asterix.external.dataset.adapter;
 
+import edu.uci.ics.asterix.common.exceptions.AsterixException;
+import edu.uci.ics.asterix.dataflow.data.nontagged.serde.ARecordSerializerDeserializer;
+import edu.uci.ics.asterix.external.library.KBATopicEntityLoader;
+import edu.uci.ics.asterix.external.library.udf.featuregeneration.EntitySearcher;
+import edu.uci.ics.asterix.external.library.utils.KBACorpusFiles;
+import edu.uci.ics.asterix.external.library.utils.LanguageDetector;
+import edu.uci.ics.asterix.om.types.ARecordType;
+import edu.uci.ics.asterix.runtime.operators.file.CounterTimerTupleForwardPolicy;
+import edu.uci.ics.hyracks.api.context.IHyracksTaskContext;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -25,16 +35,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-
-import edu.uci.ics.asterix.common.exceptions.AsterixException;
-import edu.uci.ics.asterix.dataflow.data.nontagged.serde.ARecordSerializerDeserializer;
-import edu.uci.ics.asterix.external.library.KBATopicEntityLoader;
-import edu.uci.ics.asterix.external.library.udf.featuregeneration.EntitySearcher;
-import edu.uci.ics.asterix.external.library.utils.KBACorpusFiles;
-import edu.uci.ics.asterix.external.library.utils.LanguageDetector;
-import edu.uci.ics.asterix.om.types.ARecordType;
-import edu.uci.ics.asterix.runtime.operators.file.CounterTimerTupleForwardPolicy;
-import edu.uci.ics.hyracks.api.context.IHyracksTaskContext;
 
 /**
  * An implementation of @see {PushBasedFeedClient} for the KBA Stream service.
@@ -81,7 +81,7 @@ public class KBAPushBasedStreamFeedClient extends FeedClient {
 
         String corpusDirectoryName = adapter.getDirectoryFromSplit();
 
-        streamDocServer = new KBAStreamServer(configuration, corpusDirectoryName, recordType, ctx.getFrameSize(),
+        streamDocServer = new KBAStreamServer(configuration, corpusDirectoryName, recordType, ctx.getInitialFrameSize(),
                 dataInputQueue, executorService);
 
     }

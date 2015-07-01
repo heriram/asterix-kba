@@ -14,6 +14,26 @@
  */
 package edu.uci.ics.asterix;
 
+import edu.uci.ics.asterix.common.exceptions.AsterixException;
+import edu.uci.ics.asterix.dataflow.data.nontagged.serde.ARecordSerializerDeserializer;
+import edu.uci.ics.asterix.external.dataset.adapter.FeedClient;
+import edu.uci.ics.asterix.external.dataset.adapter.KBARecord;
+import edu.uci.ics.asterix.external.dataset.adapter.KBAStreamItemProcessor;
+import edu.uci.ics.asterix.external.dataset.adapter.PushBasedKBAStreamAdapter;
+import edu.uci.ics.asterix.external.library.KBATopicEntityLoader;
+import edu.uci.ics.asterix.external.library.PhraseFinder;
+import edu.uci.ics.asterix.external.library.utils.FileTBinaryProtocol;
+import edu.uci.ics.asterix.external.library.utils.FileTIOStreamTransport;
+import edu.uci.ics.asterix.external.library.utils.KBACorpusFiles;
+import edu.uci.ics.asterix.external.library.utils.LanguageDetector;
+import edu.uci.ics.asterix.external.library.utils.TupleUtils;
+import edu.uci.ics.asterix.om.types.ARecordType;
+import edu.uci.ics.asterix.runtime.operators.file.CounterTimerTupleForwardPolicy;
+import edu.uci.ics.hyracks.api.context.IHyracksTaskContext;
+import org.apache.thrift.transport.TTransportException;
+import org.trec.kba.streamcorpus.StreamItem;
+import org.tukaani.xz.XZInputStream;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,28 +51,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
-
-import org.apache.thrift.transport.TTransportException;
-import org.trec.kba.streamcorpus.StreamItem;
-import org.tukaani.xz.XZInputStream;
-
-import edu.uci.ics.asterix.common.exceptions.AsterixException;
-import edu.uci.ics.asterix.dataflow.data.nontagged.serde.ARecordSerializerDeserializer;
-import edu.uci.ics.asterix.external.dataset.adapter.FeedClient;
-import edu.uci.ics.asterix.external.dataset.adapter.KBARecord;
-import edu.uci.ics.asterix.external.dataset.adapter.KBAStreamItemProcessor;
-import edu.uci.ics.asterix.external.dataset.adapter.PushBasedKBAStreamAdapter;
-import edu.uci.ics.asterix.external.dataset.adapter.IFeedClient.InflowState;
-import edu.uci.ics.asterix.external.library.KBATopicEntityLoader;
-import edu.uci.ics.asterix.external.library.PhraseFinder;
-import edu.uci.ics.asterix.external.library.utils.FileTBinaryProtocol;
-import edu.uci.ics.asterix.external.library.utils.FileTIOStreamTransport;
-import edu.uci.ics.asterix.external.library.utils.KBACorpusFiles;
-import edu.uci.ics.asterix.external.library.utils.LanguageDetector;
-import edu.uci.ics.asterix.external.library.utils.TupleUtils;
-import edu.uci.ics.asterix.om.types.ARecordType;
-import edu.uci.ics.asterix.runtime.operators.file.CounterTimerTupleForwardPolicy;
-import edu.uci.ics.hyracks.api.context.IHyracksTaskContext;
 
 /**
  * An implementation of @see {PushBasedFeedClient} for the KBA Stream service.
@@ -101,7 +99,7 @@ public class PushBasedKBAStreamFeedClient extends FeedClient {
 
         languageDetector = new LanguageDetector();
 
-        streamDocServer = new KBAStreamServer(configuration, corpusDirectoryName, recordType, ctx.getFrameSize(),
+        streamDocServer = new KBAStreamServer(configuration, corpusDirectoryName, recordType, ctx.getInitialFrameSize(),
                 dataInputQueue, executorService);
 
     }
